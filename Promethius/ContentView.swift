@@ -16,6 +16,7 @@ struct ContentView: View {
         }
         detail : {
             Text("Agent Dashboard")
+            DashboardView()
         }
     }
 }
