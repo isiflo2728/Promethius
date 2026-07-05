@@ -7,67 +7,63 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2F729DF72FF8851400A2EB8A /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 2F729DF62FF8851400A2EB8A /* MCP */; };
-		2F729DF92FF8851400A2EB8A /* mcp-everything-client in Frameworks */ = {isa = PBXBuildFile; productRef = 2F729DF82FF8851400A2EB8A /* mcp-everything-client */; };
-		2F729DFB2FF8851400A2EB8A /* mcp-everything-server in Frameworks */ = {isa = PBXBuildFile; productRef = 2F729DFA2FF8851400A2EB8A /* mcp-everything-server */; };
+		A100000000000000000000A3 /* AgentKit in Frameworks */ = {isa = PBXBuildFile; productRef = A100000000000000000000A2 /* AgentKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		2FF11C082FF86B00006AF42A /* PBXContainerItemProxy */ = {
+		2F0080B32FFB011500074164 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 2FF11BF22FF86AFF006AF42A /* Project object */;
+			containerPortal = 2F00809D2FFB011400074164 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 2FF11BF92FF86AFF006AF42A;
-			remoteInfo = Promethius;
+			remoteGlobalIDString = 2F0080A42FFB011400074164;
+			remoteInfo = AgentHubMac;
 		};
-		2FF11C122FF86B00006AF42A /* PBXContainerItemProxy */ = {
+		2F0080BD2FFB011500074164 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 2FF11BF22FF86AFF006AF42A /* Project object */;
+			containerPortal = 2F00809D2FFB011400074164 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 2FF11BF92FF86AFF006AF42A;
-			remoteInfo = Promethius;
+			remoteGlobalIDString = 2F0080A42FFB011400074164;
+			remoteInfo = AgentHubMac;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2FF11BFA2FF86AFF006AF42A /* Promethius.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Promethius.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2FF11C072FF86B00006AF42A /* PromethiusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PromethiusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		2FF11C112FF86B00006AF42A /* PromethiusUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PromethiusUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F0080A52FFB011400074164 /* AgentHubMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AgentHubMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F0080B22FFB011500074164 /* AgentHubMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgentHubMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F0080BC2FFB011500074164 /* AgentHubMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgentHubMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2FF11BFC2FF86AFF006AF42A /* Promethius */ = {
+		2F0080A72FFB011400074164 /* AgentHubMac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Promethius;
+			path = AgentHubMac;
 			sourceTree = "<group>";
 		};
-		2FF11C0A2FF86B00006AF42A /* PromethiusTests */ = {
+		2F0080B52FFB011500074164 /* AgentHubMacTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = PromethiusTests;
+			path = AgentHubMacTests;
 			sourceTree = "<group>";
 		};
-		2FF11C142FF86B00006AF42A /* PromethiusUITests */ = {
+		2F0080BF2FFB011500074164 /* AgentHubMacUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = PromethiusUITests;
+			path = AgentHubMacUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		2FF11BF72FF86AFF006AF42A /* Frameworks */ = {
+		2F0080A22FFB011400074164 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				2F729DFB2FF8851400A2EB8A /* mcp-everything-server in Frameworks */,
-				2F729DF72FF8851400A2EB8A /* MCP in Frameworks */,
-				2F729DF92FF8851400A2EB8A /* mcp-everything-client in Frameworks */,
+				A100000000000000000000A3 /* AgentKit in Frameworks */,
 			);
 		};
-		2FF11C042FF86B00006AF42A /* Frameworks */ = {
+		2F0080AF2FFB011500074164 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
 		};
-		2FF11C0E2FF86B00006AF42A /* Frameworks */ = {
+		2F0080B92FFB011500074164 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -75,22 +71,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		2FF11BF12FF86AFF006AF42A = {
+		2F00809C2FFB011400074164 = {
 			isa = PBXGroup;
 			children = (
-				2FF11BFC2FF86AFF006AF42A /* Promethius */,
-				2FF11C0A2FF86B00006AF42A /* PromethiusTests */,
-				2FF11C142FF86B00006AF42A /* PromethiusUITests */,
-				2FF11BFB2FF86AFF006AF42A /* Products */,
+				2F0080A72FFB011400074164 /* AgentHubMac */,
+				2F0080B52FFB011500074164 /* AgentHubMacTests */,
+				2F0080BF2FFB011500074164 /* AgentHubMacUITests */,
+				2F0080A62FFB011400074164 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		2FF11BFB2FF86AFF006AF42A /* Products */ = {
+		2F0080A62FFB011400074164 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2FF11BFA2FF86AFF006AF42A /* Promethius.app */,
-				2FF11C072FF86B00006AF42A /* PromethiusTests.xctest */,
-				2FF11C112FF86B00006AF42A /* PromethiusUITests.xctest */,
+				2F0080A52FFB011400074164 /* AgentHubMac.app */,
+				2F0080B22FFB011500074164 /* AgentHubMacTests.xctest */,
+				2F0080BC2FFB011500074164 /* AgentHubMacUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -98,130 +94,128 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2FF11BF92FF86AFF006AF42A /* Promethius */ = {
+		2F0080A42FFB011400074164 /* AgentHubMac */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2FF11C192FF86B00006AF42A /* Build configuration list for PBXNativeTarget "Promethius" */;
+			buildConfigurationList = 2F0080C42FFB011500074164 /* Build configuration list for PBXNativeTarget "AgentHubMac" */;
 			buildPhases = (
-				2FF11BF62FF86AFF006AF42A /* Sources */,
-				2FF11BF72FF86AFF006AF42A /* Frameworks */,
-				2FF11BF82FF86AFF006AF42A /* Resources */,
+				2F0080A12FFB011400074164 /* Sources */,
+				2F0080A22FFB011400074164 /* Frameworks */,
+				2F0080A32FFB011400074164 /* Resources */,
 			);
 			buildRules = (
 			);
 			fileSystemSynchronizedGroups = (
-				2FF11BFC2FF86AFF006AF42A /* Promethius */,
+				2F0080A72FFB011400074164 /* AgentHubMac */,
 			);
-			name = Promethius;
 			packageProductDependencies = (
-				2F729DF62FF8851400A2EB8A /* MCP */,
-				2F729DF82FF8851400A2EB8A /* mcp-everything-client */,
-				2F729DFA2FF8851400A2EB8A /* mcp-everything-server */,
+				A100000000000000000000A2 /* AgentKit */,
 			);
-			productName = Promethius;
-			productReference = 2FF11BFA2FF86AFF006AF42A /* Promethius.app */;
+			name = AgentHubMac;
+			productName = AgentHubMac;
+			productReference = 2F0080A52FFB011400074164 /* AgentHubMac.app */;
 			productType = "com.apple.product-type.application";
 		};
-		2FF11C062FF86B00006AF42A /* PromethiusTests */ = {
+		2F0080B12FFB011500074164 /* AgentHubMacTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2FF11C1C2FF86B00006AF42A /* Build configuration list for PBXNativeTarget "PromethiusTests" */;
+			buildConfigurationList = 2F0080C72FFB011500074164 /* Build configuration list for PBXNativeTarget "AgentHubMacTests" */;
 			buildPhases = (
-				2FF11C032FF86B00006AF42A /* Sources */,
-				2FF11C042FF86B00006AF42A /* Frameworks */,
-				2FF11C052FF86B00006AF42A /* Resources */,
+				2F0080AE2FFB011500074164 /* Sources */,
+				2F0080AF2FFB011500074164 /* Frameworks */,
+				2F0080B02FFB011500074164 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				2FF11C092FF86B00006AF42A /* PBXTargetDependency */,
+				2F0080B42FFB011500074164 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2FF11C0A2FF86B00006AF42A /* PromethiusTests */,
+				2F0080B52FFB011500074164 /* AgentHubMacTests */,
 			);
-			name = PromethiusTests;
-			productName = PromethiusTests;
-			productReference = 2FF11C072FF86B00006AF42A /* PromethiusTests.xctest */;
+			name = AgentHubMacTests;
+			productName = AgentHubMacTests;
+			productReference = 2F0080B22FFB011500074164 /* AgentHubMacTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		2FF11C102FF86B00006AF42A /* PromethiusUITests */ = {
+		2F0080BB2FFB011500074164 /* AgentHubMacUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2FF11C1F2FF86B00006AF42A /* Build configuration list for PBXNativeTarget "PromethiusUITests" */;
+			buildConfigurationList = 2F0080CA2FFB011500074164 /* Build configuration list for PBXNativeTarget "AgentHubMacUITests" */;
 			buildPhases = (
-				2FF11C0D2FF86B00006AF42A /* Sources */,
-				2FF11C0E2FF86B00006AF42A /* Frameworks */,
-				2FF11C0F2FF86B00006AF42A /* Resources */,
+				2F0080B82FFB011500074164 /* Sources */,
+				2F0080B92FFB011500074164 /* Frameworks */,
+				2F0080BA2FFB011500074164 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				2FF11C132FF86B00006AF42A /* PBXTargetDependency */,
+				2F0080BE2FFB011500074164 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2FF11C142FF86B00006AF42A /* PromethiusUITests */,
+				2F0080BF2FFB011500074164 /* AgentHubMacUITests */,
 			);
-			name = PromethiusUITests;
-			productName = PromethiusUITests;
-			productReference = 2FF11C112FF86B00006AF42A /* PromethiusUITests.xctest */;
+			name = AgentHubMacUITests;
+			productName = AgentHubMacUITests;
+			productReference = 2F0080BC2FFB011500074164 /* AgentHubMacUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		2FF11BF22FF86AFF006AF42A /* Project object */ = {
+		2F00809D2FFB011400074164 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					2FF11BF92FF86AFF006AF42A = {
+					2F0080A42FFB011400074164 = {
 						CreatedOnToolsVersion = 27.0;
 					};
-					2FF11C062FF86B00006AF42A = {
+					2F0080B12FFB011500074164 = {
 						CreatedOnToolsVersion = 27.0;
-						TestTargetID = 2FF11BF92FF86AFF006AF42A;
+						TestTargetID = 2F0080A42FFB011400074164;
 					};
-					2FF11C102FF86B00006AF42A = {
+					2F0080BB2FFB011500074164 = {
 						CreatedOnToolsVersion = 27.0;
-						TestTargetID = 2FF11BF92FF86AFF006AF42A;
+						TestTargetID = 2F0080A42FFB011400074164;
 					};
 				};
 			};
-			buildConfigurationList = 2FF11BF52FF86AFF006AF42A /* Build configuration list for PBXProject "Promethius" */;
+			buildConfigurationList = 2F0080A02FFB011400074164 /* Build configuration list for PBXProject "AgentHubMac" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = 2FF11BF12FF86AFF006AF42A;
+			mainGroup = 2F00809C2FFB011400074164;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				2F729DF52FF8851400A2EB8A /* XCRemoteSwiftPackageReference "swift-sdk" */,
+				A100000000000000000000A1 /* XCLocalSwiftPackageReference "../../Packages/AgentKit" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 2FF11BFB2FF86AFF006AF42A /* Products */;
+			productRefGroup = 2F0080A62FFB011400074164 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2FF11BF92FF86AFF006AF42A /* Promethius */,
-				2FF11C062FF86B00006AF42A /* PromethiusTests */,
-				2FF11C102FF86B00006AF42A /* PromethiusUITests */,
+				2F0080A42FFB011400074164 /* AgentHubMac */,
+				2F0080B12FFB011500074164 /* AgentHubMacTests */,
+				2F0080BB2FFB011500074164 /* AgentHubMacUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		2FF11BF82FF86AFF006AF42A /* Resources */ = {
+		2F0080A32FFB011400074164 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
 		};
-		2FF11C052FF86B00006AF42A /* Resources */ = {
+		2F0080B02FFB011500074164 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
 		};
-		2FF11C0F2FF86B00006AF42A /* Resources */ = {
+		2F0080BA2FFB011500074164 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -229,17 +223,17 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		2FF11BF62FF86AFF006AF42A /* Sources */ = {
+		2F0080A12FFB011400074164 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
 		};
-		2FF11C032FF86B00006AF42A /* Sources */ = {
+		2F0080AE2FFB011500074164 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
 		};
-		2FF11C0D2FF86B00006AF42A /* Sources */ = {
+		2F0080B82FFB011500074164 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
@@ -247,20 +241,20 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		2FF11C092FF86B00006AF42A /* PBXTargetDependency */ = {
+		2F0080B42FFB011500074164 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2FF11BF92FF86AFF006AF42A /* Promethius */;
-			targetProxy = 2FF11C082FF86B00006AF42A /* PBXContainerItemProxy */;
+			target = 2F0080A42FFB011400074164 /* AgentHubMac */;
+			targetProxy = 2F0080B32FFB011500074164 /* PBXContainerItemProxy */;
 		};
-		2FF11C132FF86B00006AF42A /* PBXTargetDependency */ = {
+		2F0080BE2FFB011500074164 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2FF11BF92FF86AFF006AF42A /* Promethius */;
-			targetProxy = 2FF11C122FF86B00006AF42A /* PBXContainerItemProxy */;
+			target = 2F0080A42FFB011400074164 /* AgentHubMac */;
+			targetProxy = 2F0080BD2FFB011500074164 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		2FF11C172FF86B00006AF42A /* Debug configuration for PBXProject "Promethius" */ = {
+		2F0080C22FFB011500074164 /* Debug configuration for PBXProject "AgentHubMac" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -324,7 +318,7 @@
 			};
 			name = Debug;
 		};
-		2FF11C182FF86B00006AF42A /* Release configuration for PBXProject "Promethius" */ = {
+		2F0080C32FFB011500074164 /* Release configuration for PBXProject "AgentHubMac" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -380,7 +374,7 @@
 			};
 			name = Release;
 		};
-		2FF11C1A2FF86B00006AF42A /* Debug configuration for PBXNativeTarget "Promethius" */ = {
+		2F0080C52FFB011500074164 /* Debug configuration for PBXNativeTarget "AgentHubMac" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -400,7 +394,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.Promethius;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.AgentHubMac;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -412,7 +406,7 @@
 			};
 			name = Debug;
 		};
-		2FF11C1B2FF86B00006AF42A /* Release configuration for PBXNativeTarget "Promethius" */ = {
+		2F0080C62FFB011500074164 /* Release configuration for PBXNativeTarget "AgentHubMac" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -432,7 +426,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.Promethius;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.AgentHubMac;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -444,7 +438,7 @@
 			};
 			name = Release;
 		};
-		2FF11C1D2FF86B00006AF42A /* Debug configuration for PBXNativeTarget "PromethiusTests" */ = {
+		2F0080C82FFB011500074164 /* Debug configuration for PBXNativeTarget "AgentHubMacTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -454,18 +448,18 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.PromethiusTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.AgentHubMacTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Promethius.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Promethius";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AgentHubMac.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AgentHubMac";
 			};
 			name = Debug;
 		};
-		2FF11C1E2FF86B00006AF42A /* Release configuration for PBXNativeTarget "PromethiusTests" */ = {
+		2F0080C92FFB011500074164 /* Release configuration for PBXNativeTarget "AgentHubMacTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -475,18 +469,18 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.PromethiusTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.AgentHubMacTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Promethius.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Promethius";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AgentHubMac.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AgentHubMac";
 			};
 			name = Release;
 		};
-		2FF11C202FF86B00006AF42A /* Debug configuration for PBXNativeTarget "PromethiusUITests" */ = {
+		2F0080CB2FFB011500074164 /* Debug configuration for PBXNativeTarget "AgentHubMacUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -494,18 +488,18 @@
 				DEVELOPMENT_TEAM = 38C5XXGVU6;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.PromethiusUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.AgentHubMacUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = Promethius;
+				TEST_TARGET_NAME = AgentHubMac;
 			};
 			name = Debug;
 		};
-		2FF11C212FF86B00006AF42A /* Release configuration for PBXNativeTarget "PromethiusUITests" */ = {
+		2F0080CC2FFB011500074164 /* Release configuration for PBXNativeTarget "AgentHubMacUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -513,83 +507,68 @@
 				DEVELOPMENT_TEAM = 38C5XXGVU6;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.PromethiusUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isidoro.AgentHubMacUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = Promethius;
+				TEST_TARGET_NAME = AgentHubMac;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2FF11BF52FF86AFF006AF42A /* Build configuration list for PBXProject "Promethius" */ = {
+		2F0080A02FFB011400074164 /* Build configuration list for PBXProject "AgentHubMac" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2FF11C172FF86B00006AF42A /* Debug configuration for PBXProject "Promethius" */,
-				2FF11C182FF86B00006AF42A /* Release configuration for PBXProject "Promethius" */,
+				2F0080C22FFB011500074164 /* Debug configuration for PBXProject "AgentHubMac" */,
+				2F0080C32FFB011500074164 /* Release configuration for PBXProject "AgentHubMac" */,
 			);
 			defaultConfigurationName = Release;
 		};
-		2FF11C192FF86B00006AF42A /* Build configuration list for PBXNativeTarget "Promethius" */ = {
+		2F0080C42FFB011500074164 /* Build configuration list for PBXNativeTarget "AgentHubMac" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2FF11C1A2FF86B00006AF42A /* Debug configuration for PBXNativeTarget "Promethius" */,
-				2FF11C1B2FF86B00006AF42A /* Release configuration for PBXNativeTarget "Promethius" */,
+				2F0080C52FFB011500074164 /* Debug configuration for PBXNativeTarget "AgentHubMac" */,
+				2F0080C62FFB011500074164 /* Release configuration for PBXNativeTarget "AgentHubMac" */,
 			);
 			defaultConfigurationName = Release;
 		};
-		2FF11C1C2FF86B00006AF42A /* Build configuration list for PBXNativeTarget "PromethiusTests" */ = {
+		2F0080C72FFB011500074164 /* Build configuration list for PBXNativeTarget "AgentHubMacTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2FF11C1D2FF86B00006AF42A /* Debug configuration for PBXNativeTarget "PromethiusTests" */,
-				2FF11C1E2FF86B00006AF42A /* Release configuration for PBXNativeTarget "PromethiusTests" */,
+				2F0080C82FFB011500074164 /* Debug configuration for PBXNativeTarget "AgentHubMacTests" */,
+				2F0080C92FFB011500074164 /* Release configuration for PBXNativeTarget "AgentHubMacTests" */,
 			);
 			defaultConfigurationName = Release;
 		};
-		2FF11C1F2FF86B00006AF42A /* Build configuration list for PBXNativeTarget "PromethiusUITests" */ = {
+		2F0080CA2FFB011500074164 /* Build configuration list for PBXNativeTarget "AgentHubMacUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2FF11C202FF86B00006AF42A /* Debug configuration for PBXNativeTarget "PromethiusUITests" */,
-				2FF11C212FF86B00006AF42A /* Release configuration for PBXNativeTarget "PromethiusUITests" */,
+				2F0080CB2FFB011500074164 /* Debug configuration for PBXNativeTarget "AgentHubMacUITests" */,
+				2F0080CC2FFB011500074164 /* Release configuration for PBXNativeTarget "AgentHubMacUITests" */,
 			);
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		2F729DF52FF8851400A2EB8A /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/modelcontextprotocol/swift-sdk.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.12.1;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		A100000000000000000000A1 /* XCLocalSwiftPackageReference "../../Packages/AgentKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../Packages/AgentKit";
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		2F729DF62FF8851400A2EB8A /* MCP */ = {
+		A100000000000000000000A2 /* AgentKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 2F729DF52FF8851400A2EB8A /* XCRemoteSwiftPackageReference "swift-sdk" */;
-			productName = MCP;
-		};
-		2F729DF82FF8851400A2EB8A /* mcp-everything-client */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2F729DF52FF8851400A2EB8A /* XCRemoteSwiftPackageReference "swift-sdk" */;
-			productName = "mcp-everything-client";
-		};
-		2F729DFA2FF8851400A2EB8A /* mcp-everything-server */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2F729DF52FF8851400A2EB8A /* XCRemoteSwiftPackageReference "swift-sdk" */;
-			productName = "mcp-everything-server";
+			productName = AgentKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = 2FF11BF22FF86AFF006AF42A /* Project object */;
+	rootObject = 2F00809D2FFB011400074164 /* Project object */;
 	validationLevel = 1;
 }
