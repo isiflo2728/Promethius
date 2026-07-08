@@ -69,4 +69,30 @@ public final class AgentRepository {
     public func connectedAccounts() throws -> [ConnectedAccount] {
         try context.fetch(FetchDescriptor<ConnectedAccount>())
     }
+
+    /// Insert or update the account for a provider. One `ConnectedAccount` per
+    /// provider: if one already exists it is updated in place, otherwise a new
+    /// record is created. Only non-secret metadata is stored — the OAuth tokens
+    /// live server-side in Composio.
+    @discardableResult
+    public func upsertConnectedAccount(
+        provider: PermissionScope,
+        connectionId: String,
+        accountLabel: String,
+        status: ConnectionStatus
+    ) throws -> ConnectedAccount {
+        let existing = try connectedAccounts().first { $0.provider == provider }
+        let account = existing ?? ConnectedAccount(provider: provider)
+        account.composioConnectionId = connectionId
+        account.accountLabel = accountLabel
+        account.status = status
+        if status == .connected, account.connectedAt == nil {
+            account.connectedAt = Date()
+        }
+        if existing == nil {
+            context.insert(account)
+        }
+        try context.save()
+        return account
+    }
 }
