@@ -107,10 +107,10 @@
 			fileSystemSynchronizedGroups = (
 				2F0080A72FFB011400074164 /* AgentHubMac */,
 			);
+			name = AgentHubMac;
 			packageProductDependencies = (
 				A100000000000000000000A2 /* AgentKit */,
 			);
-			name = AgentHubMac;
 			productName = AgentHubMac;
 			productReference = 2F0080A52FFB011400074164 /* AgentHubMac.app */;
 			productType = "com.apple.product-type.application";
@@ -558,7 +558,7 @@
 /* Begin XCLocalSwiftPackageReference section */
 		A100000000000000000000A1 /* XCLocalSwiftPackageReference "../../Packages/AgentKit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../Packages/AgentKit";
+			relativePath = ../../Packages/AgentKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 

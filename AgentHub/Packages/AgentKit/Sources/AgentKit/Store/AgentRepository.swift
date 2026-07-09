@@ -40,6 +40,14 @@ public final class AgentRepository {
         try context.save()
     }
 
+    /// Deletes several agents in one transaction — a single `save()` rather
+    /// than one per agent.
+    public func delete(_ agents: [Agent]) throws {
+        guard !agents.isEmpty else { return }
+        for agent in agents { context.delete(agent) }
+        try context.save()
+    }
+
     // MARK: - Run log
 
     public func appendLog(_ entry: RunLogEntry, to agent: Agent) throws {

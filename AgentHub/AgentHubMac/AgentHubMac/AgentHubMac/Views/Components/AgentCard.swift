@@ -27,3 +27,9 @@ struct AgentCard: View {
     // Placeholder until run history feeds the sparkline.
     private var sampleActivity: [Double] { [2, 5, 3, 8, 6, 9, 4] }
 }
+
+#Preview {
+    AgentCard(agent: .sample)
+        .padding()
+        .frame(width: 300)
+}
