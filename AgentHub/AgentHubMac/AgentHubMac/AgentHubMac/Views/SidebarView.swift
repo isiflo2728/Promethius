@@ -11,6 +11,7 @@ enum NavSelection : Hashable {
 }
 /// connected accounts, and settings.
 struct SidebarView: View {
+    
     @State var selection: NavSelection = .missionControl
     
     var body: some View {
@@ -28,11 +29,8 @@ struct SidebarView: View {
                 Label("Agent 1", systemImage: "brain.head.profile")
                     .tag(NavSelection.agent1)
                 Label("Agent 2", systemImage: "brain.head.profile")
-                    .tag(NavSelection.agent2tygtgt)
-            }
-            Section("Market Place"){
-                
-            }
+                    .tag(NavSelection.agent2)
+            } 
         }
         .listStyle(.sidebar)
         .navigationTitle("AgentHub")
