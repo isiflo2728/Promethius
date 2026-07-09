@@ -113,6 +113,15 @@ class LocalProvider(BaseProvider):
         small piece of new text under `.delta.content` instead of a full
         `.message`. That's why this reads `chunk.choices[0].delta.content`
         rather than `.message.content`.
+
+        This method is text-only by contract (`AsyncIterator[str]`) — call
+        it only for turns where no tool call is possible (e.g. a final
+        answer after tools are already resolved, or a no-tools chat). If
+        the model tries to call a tool mid-stream anyway, this raises
+        rather than silently discarding the request — use `complete()` for
+        any turn where a tool call might happen. See
+        docs/Understanding/streaming_chat_completions.md and
+        docs/ISSUES.md for the full reasoning.
         """
         response = await self.client.chat.completions.create(  # pyright: ignore[reportCallIssue]
             model=self.model,
@@ -121,9 +130,22 @@ class LocalProvider(BaseProvider):
             stream=True,
         )
         async for chunk in response:
-            delta = chunk.choices[0].delta.content
-            if delta:  # delta can be None between content chunks (e.g. on a tool-call-only chunk)
-                yield delta
+            if not chunk.choices:
+                # e.g. a trailing usage-only chunk (stream_options={"include_usage": True})
+                # or a provider/proxy metadata chunk — nothing to read here.
+                continue
+
+            delta = chunk.choices[0].delta
+
+            if delta.tool_calls:
+                raise NotImplementedError(
+                    "LocalProvider.stream() does not support tool calls — "
+                    "the model tried to call a tool mid-stream. Use "
+                    "complete() instead for turns where a tool call is possible."
+                )
+
+            if delta.content:  # can be None between content chunks
+                yield delta.content
 
     @override
     def format_tool_result(
@@ -176,11 +198,12 @@ class LocalProvider(BaseProvider):
         return out
 
     def _format_tools(self, tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Translate our Tool schemas (MCP/JSON-Schema-shaped: name,
-        description, input_schema) into OpenAI's expected tool-call format.
+        """Translate our Tool schemas into OpenAI's expected tool-call format.
 
-        The only real translation is `input_schema` -> `parameters` — the
-        rest is just nesting the same data one level deeper under
+        Our tool dicts use `input_schema` for a tool's parameter schema —
+        that's Anthropic's (and MCP's) naming convention, not OpenAI's. The
+        only real translation happening here is `input_schema` -> `parameters`;
+        the rest is just nesting the same data one level deeper under
         `{"type": "function", "function": {...}}`, which is the shape every
         OpenAI-compatible API expects a tool definition in.
         """
