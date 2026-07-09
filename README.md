@@ -1,6 +1,36 @@
-# Promethius
+# Promethius — AgentHub
 
-A macOS app built with SwiftUI.
+A macOS + iOS app for building and running autonomous AI agents, built with SwiftUI, SwiftData, and CloudKit.
+
+---
+
+## 🎯 North Star — the goal
+
+**Build an app that feels genuinely, obsessively crafted — like a top-tier native Apple app, not an AI-generated shell.**
+
+Every screen, every transition, every pixel of spacing should feel considered. When someone uses Promethius, it should feel *amazing and smooth* — the kind of app you keep open just because it's pleasant to touch. We are not shipping "good enough." We are shipping **polished**.
+
+### Design non-negotiables
+
+- **Feels native, not "AI-made."** Minimal generic AI-slop elements — no default-looking gradients-on-everything, no stock chatbot bubbles, no cookie-cutter card grids. It should look like Apple could have shipped it. Every component earns its place.
+- **Obsess over every detail.** Spacing follows a consistent rhythm (4/8/12/16pt). Typography uses the system type scale with intent. Alignment is exact. Nothing is "roughly centered."
+- **Motion is smooth and purposeful.** Spring animations, not linear fades. Every state change is animated with intent — appearing, selecting, loading, completing. Target buttery **ProMotion (120fps)** smoothness; no jank, no dropped frames on scroll.
+- **Native materials & depth.** Use system materials (`.regularMaterial`, `.ultraThinMaterial`), vibrancy, and proper light/dark adaptation. Respect the platform (sidebar behavior, toolbar conventions, hover states on Mac).
+- **SF Symbols, done right.** Consistent weights and rendering modes. Symbols animate (`.symbolEffect`) where it adds delight, not everywhere.
+- **Restraint.** Fewer, better elements. Whitespace is a feature. If a screen feels busy, remove something.
+- **Feedback everywhere.** Every tap has a response — press states, subtle haptics/sound where fitting, clear loading and empty states. The app never feels dead.
+- **Accessible by default.** Full VoiceOver labels, Dynamic Type, Reduce Motion honored, sufficient contrast. Polish includes everyone.
+
+> Rule of thumb: if a change makes the app feel even 5% smoother or more intentional, it's worth doing. Sweat the details relentlessly.
+
+---
+
+## Architecture at a glance
+
+- **AgentHubMac** — the executor. Runs agents, local tools (files, git, calendar), and on-device inference. Fully interactive.
+- **AgentHubMobile** — read-only + Intent-driven companion. View agents, approve actions, trigger runs.
+- **AgentKit** (Swift package) — shared models, view models, storage, and App Intents used by both apps.
+- **Python (FastAPI) service** — owns the Composio API key and executes remote SaaS actions (Gmail/Slack/…). The app never holds the key.
 
 ## Requirements
 
@@ -27,6 +57,26 @@ In Xcode, press `Cmd + U`, or run from the command line:
 ```bash
 xcodebuild test -project Promethius.xcodeproj -scheme Promethius -destination 'platform=macOS'
 ```
+
+---
+
+## Branching model
+
+Company-style flow. **Never commit straight to `main`.** Full guide: [`docs/BRANCHING.md`](docs/BRANCHING.md).
+
+```
+feature/*  →  develop  →  staging  →  main
+ your work    testing     pre-prod    PRODUCTION
+```
+
+| Branch | Role | Protected |
+|--------|------|-----------|
+| `main` | Production. Only proven, released code. | ✅ |
+| `staging` | Final pre-prod mirror before a release. | ✅ |
+| `develop` | Integration/testing. Default branch; features land here. | — |
+| `feature/*` | Day-to-day work. One branch per feature/fix. | — |
+
+Protected branches require a Pull Request (you can self-merge); no direct or force pushes.
 
 ---
 
