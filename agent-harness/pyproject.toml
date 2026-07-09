@@ -1,0 +1,12 @@
+[project]
+name = "agent-harness"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0,<2",
+]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
