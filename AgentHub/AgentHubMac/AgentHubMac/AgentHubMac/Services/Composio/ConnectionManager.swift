@@ -25,17 +25,28 @@ final class ConnectionManager {
     /// 4. upsert a `ConnectedAccount` record so both devices see it.
     func connect(_ provider: PermissionScope) async throws {
         guard provider.isRemote else { return }
-        // let connectURL = try await client.initiateConnection(provider)
-        // let callback = try await coordinator.authenticate(url: connectURL)
-        // let connectionId = try await client.finalizeConnection(from: callback)
-        // upsert ConnectedAccount(provider:, composioConnectionId: connectionId,
-        //                         status: .connected)
-        _ = coordinator
-        _ = client
+
+        // 1. Ask the service to start a connect flow and hand back Composio's URL.
+        let connection = try await client.initiateConnection(provider)
+
+        // 2. Open Composio's connect URL; the user approves in the browser.
+        _ = try await coordinator.authenticate(url: connection.connectUrl)
+
+        // 3. Ask the service whether the connection is now live.
+        let status = try await client.connectionStatus(provider)
+
+        // 4. Persist non-secret metadata so both devices see it via CloudKit.
+        try repository.upsertConnectedAccount(
+            provider: provider,
+            connectionId: status.connectionId ?? connection.connectionId,
+            accountLabel: status.accountLabel ?? "",
+            status: status.connectionStatus
+        )
     }
 
     func disconnect(_ account: ConnectedAccount) async throws {
-        // try await client.revokeConnection(account.composioConnectionId)
+        // The service revokes the token in Composio; here we only flip local
+        // metadata. Wire `client.revokeConnection(...)` once the service adds it.
         account.status = .disconnected
     }
 }
