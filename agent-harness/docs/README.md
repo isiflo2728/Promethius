@@ -175,7 +175,7 @@ graph LR
         Session --> Sessions["self.sessions[name]"]
         Session --> Tools["self._tools"]
     end
-    A -->|spawns subprocess, stdin/stdout| Local[("local MCP server")]
+    A -->|"spawns subprocess, stdin/stdout"| Local[("local MCP server")]
     B -->|"HTTPS + x-api-key header"| Remote[("Composio MCP server")]
 ```
 
