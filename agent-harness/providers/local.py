@@ -11,7 +11,12 @@
 import json
 from openai import AsyncOpenAI
 from providers.base import BaseProvider, Message, ToolCall, ModelResponse
-from typing import Any, override
+from typing import Any
+# `override` isn't in `typing` until Python 3.12 — this project pins 3.11
+# (.python-version, pyproject.toml's requires-python), so it has to come
+# from the typing_extensions backport instead. `from typing import override`
+# fails ImportError on this project's actual interpreter.
+from typing_extensions import override
 from collections.abc import AsyncIterator
 
 
@@ -180,7 +185,32 @@ class LocalProvider(BaseProvider):
         """
         out: list[dict[str, Any]] = [{"role": "system", "content": system}]
         for m in messages:
-            if m.role == "tool":
+            if isinstance(m.content, list):
+                # An assistant turn that requested tool calls. Message.content
+                # is `str | list[ToolCall]` for exactly this case — this is
+                # the list branch, not response text. The wire format wants
+                # a `tool_calls` array here, not free text in `content`; and
+                # arguments go back out as a JSON string (the reverse of
+                # `complete()`'s `json.loads(tc.function.arguments)` on the
+                # way in).
+                out.append(
+                    {
+                        "role": m.role,
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": tc.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tc.name,
+                                    "arguments": json.dumps(tc.arguments),
+                                },
+                            }
+                            for tc in m.content
+                        ],
+                    }
+                )
+            elif m.role == "tool":
                 # Tool-result messages need tool_call_id so the model can
                 # match this result back to the ToolCall it made — a plain
                 # {"role": ..., "content": ...} pair isn't enough on its own.
@@ -192,8 +222,8 @@ class LocalProvider(BaseProvider):
                     }
                 )
             else:
-                # user / assistant messages: just role + content, no extra
-                # bookkeeping fields needed.
+                # user / assistant text messages: just role + content, no
+                # extra bookkeeping fields needed.
                 out.append({"role": m.role, "content": m.content})
         return out
 

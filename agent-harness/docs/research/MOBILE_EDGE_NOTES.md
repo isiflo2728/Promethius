@@ -3,7 +3,7 @@
 > **Purpose:** Reference notes covering mobile/edge agent architecture,
 > Apple Foundation Models, on-device tool calling limitations, and how
 > the Python agent harness built in this project maps to mobile platforms.
-> Starts from the DAEX repo analysis. Read alongside AGENT_ARCHITECTURE.md.
+> Starts from the DAEX repo analysis. Read alongside ../AGENT_ARCHITECTURE.md.
 
 ---
 
@@ -341,7 +341,7 @@ providers/local.py
               LiteRT-LM (Android)
               Foundation Models (iOS, locked model)
 
-mcp/client.py
+mcp_client/client.py
     Concept:  transfers
     Code:     partially — MCP over stdio does not work on mobile
     Replace:  MCP over HTTP/SSE to a remote server (works on mobile)
@@ -355,7 +355,7 @@ mcp/client.py
 Python now (desktop)         Mobile later
 ─────────────────────────────────────────────
 LocalProvider            →   llama.cpp / ExecuTorch / LiteRT
-mcp/client.py (stdio)    →   MCP over HTTP/SSE (remote server)
+mcp_client/client.py (stdio)    →   MCP over HTTP/SSE (remote server)
                              OR native MCP SDK per platform
 core/loop.py             →   Same logic, ~50 lines, new language
 core/history.py          →   Same logic, trivial rewrite
@@ -410,7 +410,7 @@ React Native app
 ├── loop.ts          ← your loop.py rewritten in TypeScript (~1-2 hours)
 ├── history.ts       ← your history.py rewritten in TypeScript (~15 min)
 ├── ExecuTorch       ← replaces LocalProvider (Gemma4:e4b on-device)
-└── MCP over HTTP    ← replaces mcp/client.py stdio (remote MCP server)
+└── MCP over HTTP    ← replaces mcp_client/client.py stdio (remote MCP server)
 ```
 
 **Pros:**

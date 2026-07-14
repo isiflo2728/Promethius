@@ -36,10 +36,10 @@ is intentional (docs are ahead of code):
   build order: `tool.py` → `agent.py` → `tools/example_tools.py` → `main.py`.
 - **`docs/AGENT_ARCHITECTURE.md`** is a north-star reference design (MCP-based
   tool layer, `core/loop.py`, `core/history.py`, `core/interrupts.py`,
-  `mcp/client.py`, `config.py`, a 6-phase roadmap) that the project is
+  `mcp_client/client.py`, `config.py`, a 6-phase roadmap) that the project is
   growing toward but has not reached. Don't assume directories/files it
   describes exist — check first.
-- **`docs/learning_agent_architecture.md`** — notes distilled from reading
+- **`docs/research/learning_agent_architecture.md`** — notes distilled from reading
   Hermes Agent's actual source. The load-bearing ideas to carry forward:
   the core loop itself is tiny (~15-30 lines); prefer a **registry pattern**
   (self-registering tools) over an if/elif dispatcher once there are more
@@ -49,7 +49,7 @@ is intentional (docs are ahead of code):
   **strict message role alternation** (no two same-role messages in a row);
   don't build memory/skills/delegation until there's a concrete need for
   them.
-- **`docs/MOBILE_EDGE_NOTES.md`** — mobile/edge porting research. Conclusion:
+- **`docs/research/MOBILE_EDGE_NOTES.md`** — mobile/edge porting research. Conclusion:
   the loop's *concepts* port to Swift/Kotlin, the Python code does not. The
   planned path is thin-client-to-a-server first (Modal-hosted), on-device
   inference later. Don't let this pull mobile concerns into the current

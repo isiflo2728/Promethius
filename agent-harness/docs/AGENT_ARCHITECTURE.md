@@ -88,7 +88,7 @@ core/loop.py         ← runs the Thought → Action → Observation cycle
     ├── core/history.py       ← the running list of messages
     ├── providers/local.py    ← translates to/from Ollama's API format
     ├── core/interrupts.py    ← handles Ctrl+C and mid-task redirects
-    └── mcp/client.py         ← connects to MCP servers, dispatches tool calls
+    └── mcp_client/client.py         ← connects to MCP servers, dispatches tool calls
 ```
 
 ---
@@ -111,7 +111,7 @@ agent/
 │   ├── base.py               ← Message/ToolCall/ModelResponse dataclasses
 │   └── local.py              ← Ollama provider (OpenAI-compatible format)
 │
-├── mcp/
+├── mcp_client/
 │   ├── __init__.py
 │   └── client.py             ← MCP client: connects to servers, calls tools
 │
@@ -454,10 +454,10 @@ names to functions. MCP replaces this entirely:
 
 ```
 Without MCP:  loop.py → dispatch.py → your Python functions
-With MCP:     loop.py → mcp/client.py → MCP server → tools live there
+With MCP:     loop.py → mcp_client/client.py → MCP server → tools live there
 ```
 
-`mcp/client.py` does three things:
+`mcp_client/client.py` does three things:
 1. Connect to MCP servers
 2. Get the list of available tools from each server
 3. Route tool calls to the right server and return results
@@ -474,11 +474,11 @@ await mcp.connect("puppeteer",   "npx", ["-y", "@modelcontextprotocol/server-pup
 
 ```
 1. main.py connects to MCP server
-2. mcp/client.py calls mcp.list_tools() → gets tool schemas
+2. mcp_client/client.py calls mcp.list_tools() → gets tool schemas
 3. schemas passed to provider.complete() so model knows what tools exist
 4. Model responds: "I want to call list_directory with path='.'"
 5. loop.py calls mcp.call("list_directory", {"path": "."})
-6. mcp/client.py routes to filesystem server → gets result
+6. mcp_client/client.py routes to filesystem server → gets result
 7. Result appended to history → model called again
 8. Model produces final answer
 ```
@@ -837,7 +837,7 @@ async def run(
     return "Reached max turns without finishing."
 ```
 
-### `mcp/client.py`
+### `mcp_client/client.py`
 
 ```python
 from mcp import ClientSession, StdioServerParameters
