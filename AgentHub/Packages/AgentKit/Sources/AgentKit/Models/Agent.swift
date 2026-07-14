@@ -23,6 +23,9 @@ public final class Agent {
     @Relationship(deleteRule: .cascade, inverse: \PendingApproval.agent)
     public var pendingApprovals: [PendingApproval]? = []
 
+    @Relationship(deleteRule: .cascade, inverse: \Insight.agent)
+    public var insights: [Insight]? = []
+
     @Relationship(deleteRule: .cascade, inverse: \Permission.agent)
     public var permissions: [Permission]? = []
 
