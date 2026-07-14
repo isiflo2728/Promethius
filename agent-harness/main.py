@@ -56,6 +56,40 @@ async def connect_configured_servers(mcp: MCPClient) -> None:
         )
 
 
+async def print_events(
+    user_input: str, provider: LocalProvider, mcp: MCPClient, messages: list[Message]
+) -> None:
+    """Drive core.loop.run() for one user turn, printing a line per event.
+
+    core/loop.py no longer prints anything itself — it only yields event
+    dicts, so both this CLI and server.py's SSE endpoint can turn the same
+    events into their own output format. See core/loop.py's run() docstring
+    (and docs/Understanding/loop_events_for_a_frontend.md) for the full
+    event shape reference and what a "turn" means.
+    """
+    async for event in run(user_input, provider, mcp, messages, SYSTEM_PROMPT):
+        match event["type"]:
+            case "turn_start":
+                # One turn = one model call, plus dispatching any tools it
+                # requests that call. Not one turn per tool.
+                print(f"\n[turn {event['turn']}: asking the model for a response]")
+            case "status":
+                if event["state"] == "thinking":
+                    print("  ...waiting on the model (no response yet)")
+                elif event["state"] == "tool_running":
+                    print(f"  ...running tool '{event['name']}'")
+            case "thinking":
+                print(f"Thinking: {event['text']}")
+            case "tool_call":
+                print(f"-> calling: {event['name']}({event['arguments']})")
+            case "tool_result":
+                print(f"<- result: {event['result'][:200]}")
+            case "final":
+                print(f"\n{event['text']}")
+            case "max_turns":
+                print("\nReached max turns without finishing.")
+
+
 async def main() -> None:
     provider = LocalProvider(model=os.environ.get("AGENT_MODEL", "qwen3:14b"))
     mcp = MCPClient()
@@ -76,8 +110,7 @@ async def main() -> None:
             if user_input.lower() in ("exit", "quit"):
                 break
 
-            reply = await run(user_input, provider, mcp, messages, SYSTEM_PROMPT)
-            print(f"\n{reply}")
+            await print_events(user_input, provider, mcp, messages)
 
     except KeyboardInterrupt:
         print("\n[Interrupted]")

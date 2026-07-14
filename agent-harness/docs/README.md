@@ -84,6 +84,41 @@ Type a message ('exit' to quit, Ctrl+C to interrupt).
 >
 ```
 
+### 4. Run the SSE server (for a frontend, e.g. SwiftUI/macOS)
+
+`server.py` puts the same `core/loop.py` loop behind an HTTP/SSE endpoint
+instead of a terminal prompt — for a native frontend (SwiftUI on macOS is
+this project's actual target) to consume. Nothing about the loop changes;
+`main.py`'s terminal chat and `server.py`'s endpoint both just drive the
+same `core.loop.run()` generator and turn its events into their own output
+format. See `docs/Understanding/loop_events_for_a_frontend.md` for the full
+event-shape reference and a worked example.
+
+```bash
+uv run uvicorn server:app --reload
+```
+
+Then `POST /chat` with a JSON body of `{"session_id": str, "message": str}`
+— the response is a `text/event-stream` of one JSON event per SSE `data:`
+line (`turn_start`, `status`, `thinking`, `tool_call`, `tool_result`,
+`final`, `max_turns` — see `core/loop.py`'s `run()` docstring for the exact
+shape of each). Try it with `curl`:
+
+```bash
+curl -N -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "test-1", "message": "hello"}'
+```
+
+`-N` disables curl's output buffering so events print as they arrive
+instead of all at once at the end. `session_id` is whatever the frontend
+picks to keep one conversation's history distinct from another's — the
+server keeps a `session_id -> messages` map in memory (lost on restart).
+
+For how a Swift client actually consumes this stream (`URLSession.bytes(for:)`,
+SSE line-parsing, a `Decodable` event shape), see
+`docs/Understanding/loop_events_for_a_frontend.md`'s Q7.
+
 ## Dependencies
 
 From `pyproject.toml` (managed by `uv`, Python `>=3.11` pinned in
@@ -297,6 +332,12 @@ Real, working code:
   servers are configured via env vars (currently just Composio), runs a
   terminal chat loop calling `core.loop.run()` per message, and always
   disconnects cleanly on exit (normal, `exit`, or Ctrl+C).
+- **`server.py`** — the same loop behind an HTTP/SSE endpoint (`POST
+  /chat`) for a native frontend instead of a terminal. Shares one
+  `LocalProvider`/`MCPClient` across requests (built once at startup, in
+  `lifespan`), keyed per-`session_id` message history. Streams
+  `core.loop.run()`'s event dicts out as SSE — see Setup step 4 and
+  `docs/Understanding/loop_events_for_a_frontend.md`.
 - **`core/loop.py`** — the ReAct loop itself: send history + tool schemas
   to the model, dispatch any requested tool calls through MCP, append
   results, repeat until the model returns plain text or `max_turns` is

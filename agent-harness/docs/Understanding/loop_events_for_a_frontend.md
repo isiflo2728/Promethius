@@ -155,11 +155,73 @@ event-level streaming (progress), not token-level streaming (text
 appearing word by word); it's the smaller, already-compatible step, not a
 replacement for token streaming if that's wanted later.
 
+## Q7: How does a Swift client actually consume this?
+
+Both processes run on the same Mac, so this is plain local HTTP — no
+special format beyond what's described above. `server.py` binds to
+`127.0.0.1:8000` by default (`uv run uvicorn server:app --reload`); no CORS
+setup is needed since CORS is a browser-only restriction, not something
+`URLSession` enforces.
+
+The one non-obvious part: `POST /chat`'s response body arrives in pieces
+over time, not all at once, so it needs `URLSession.bytes(for:)` (an
+`AsyncSequence`) rather than a normal `data(for:)` call that waits for the
+whole response:
+
+```swift
+var request = URLRequest(url: URL(string: "http://localhost:8000/chat")!)
+request.httpMethod = "POST"
+request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+request.httpBody = try JSONEncoder().encode(["session_id": "conv-1", "message": "hello"])
+
+let (bytes, _) = try await URLSession.shared.bytes(for: request)
+
+for try await line in bytes.lines {
+    guard line.hasPrefix("data: ") else { continue }   // SSE frames look like "data: {...}"
+    let json = line.dropFirst("data: ".count)
+    let event = try JSONDecoder().decode(LoopEvent.self, from: Data(json.utf8))
+    // switch on event.type, update UI
+}
+```
+
+`bytes.lines` is what makes this streaming rather than blocking — it yields
+one line at a time *as it arrives on the wire*, matching how `server.py`
+writes one SSE frame per event as `core/loop.py`'s `run()` yields it, not
+after the whole conversation turn finishes.
+
+`LoopEvent` needs to decode whichever fields are present for a given
+`"type"` — since the shape varies by event type, an all-optional
+`Decodable` struct (or an enum with a custom `init(from:)` switching on
+`type`) both work:
+
+```swift
+struct LoopEvent: Decodable {
+    let type: String
+    let turn: Int?
+    let text: String?
+    let state: String?
+    let name: String?
+    let id: String?
+    let toolCallId: String?
+    let result: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type, turn, text, state, name, id, result
+        case toolCallId = "tool_call_id"
+    }
+}
+```
+
+`session_id` is entirely the frontend's choice — generate a UUID once per
+chat window and reuse it on every `POST /chat` for that conversation.
+`server.py`'s `sessions` dict (`server.py:47`) only uses it as a lookup key
+for that conversation's growing `messages` history; there's no handshake
+beyond sending the same string every time.
+
 ## Status
 
-Design only — not yet implemented. Whenever it is: `core/loop.py`'s `run()`
-becomes an async generator yielding the event dicts above instead of
-calling `print()`; `main.py` gets a small `print_events()` that turns those
-same events into the terminal output it has today; a new `server.py`
-drives the identical generator and streams the identical dicts as SSE for
-the SwiftUI app to consume.
+Implemented: `core/loop.py`'s `run()` is an async generator yielding the
+event dicts above instead of calling `print()`; `main.py` has
+`print_events()` turning those same events into the terminal output it had
+before; `server.py` drives the identical generator and streams the
+identical dicts as SSE for a SwiftUI client to consume, per Q7 above.
