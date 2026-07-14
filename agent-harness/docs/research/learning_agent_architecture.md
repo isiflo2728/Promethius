@@ -1,8 +1,77 @@
 # Learning Agent Architecture — Notes from Studying Hermes Agent
 
-Source: [github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent), cloned and read directly (README.md, AGENTS.md, `tools/registry.py`, `model_tools.py`, `run_agent.py`, `toolsets.py`) on 2026-07-07.
+Source: [github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent), cloned and read directly (README.md, AGENTS.md, `tools/registry.py`, `model_tools.py`, `run_agent.py`, `toolsets.py`) on 2026-07-07. Follow-up read of `agent/system_prompt.py` and `agent/prompt_builder.py` via the GitHub API on 2026-07-14, prompted by a real bug in this project (see below).
 
 ---
+
+## Part 0 — Tool-use enforcement guidance (found while debugging our own agent)
+
+While chasing a real bug in this project (`docs/ISSUES.md` item 7 — `qwen3:14b`
+reliably makes a real tool call on turn 1, then reliably stops and *describes*
+tool results instead of continuing to act on turn 2), it was worth checking
+whether Hermes had already solved this. It has, directly.
+
+`agent/prompt_builder.py` defines `TOOL_USE_ENFORCEMENT_GUIDANCE`, a system
+prompt block injected specifically for model families known to exhibit this
+failure mode. The gating list, from the source:
+
+```python
+# Model name substrings that trigger tool-use enforcement guidance.
+# Add new patterns here when a model family needs explicit steering.
+TOOL_USE_ENFORCEMENT_MODELS = ("gpt", "codex", "gemini", "gemma", "grok", "glm", "qwen", "deepseek")
+```
+
+`"qwen"` is on that list. The check is a plain substring match against
+`agent.model.lower()` (`agent/system_prompt.py`), so `qwen3:14b` — this
+project's own model — would trigger it under Hermes's own logic. This isn't
+a hypothetical fix; it's evidence from a production system, tested across
+real users and many model families, that Qwen models specifically need this
+exact kind of explicit steering.
+
+The actual guidance text, verbatim:
+
+```
+# Tool-use enforcement
+You MUST use your tools to take action — do not describe what you would do
+or plan to do without actually doing it. When you say you will perform an
+action (e.g. 'I will run the tests', 'Let me check the file', 'I will create
+the project'), you MUST immediately make the corresponding tool call in the same
+response. Never end your turn with a promise of future action — execute it now.
+Keep working until the task is actually complete. Do not stop with a summary of
+what you plan to do next time. If you have tools available that can accomplish
+the task, use them instead of telling the user what you would do.
+Every response should either (a) contain tool calls that make progress, or
+(b) deliver a final result to the user. Responses that only describe intentions
+without acting are not acceptable.
+```
+
+There's a second, *universal* one (`TASK_COMPLETION_GUIDANCE`, applied to
+every model regardless of family) targeting the closely related failure of
+stopping after a stub or fabricating output when a real path is blocked —
+with real incident notes right in the source comments: an Opus run that
+stopped after writing an 85-byte stub file and describing a plan instead of
+finishing; a DeepSeek run that, after `pip` failed, fabricated plausible-
+looking fake listings rather than reporting the blocker. Verbatim:
+
+```
+# Finishing the job
+When the user asks you to build, run, or verify something, the deliverable is
+a working artifact backed by real tool output — not a description of one.
+Do not stop after writing a stub, a plan, or a single command. Keep working
+until you have actually exercised the code or produced the requested result,
+then report what real execution returned.
+If a tool, install, or network call fails and blocks the real path, say so
+directly and try an alternative (different package manager, different
+approach, ask the user). NEVER substitute plausible-looking fabricated
+output (made-up data, invented file contents, synthesised API responses)
+for results you couldn't actually produce. Reporting a blocker honestly
+is always better than inventing a result.
+```
+
+Both are deliberately short — the source comments note they're shipped in
+the cached system prompt to every session, so token cost is paid once and
+amortized via prefix caching, which is the same prompt-caching discipline
+called out in Part 3 below.
 
 ## Part 1 — What Hermes Agent actually is
 
