@@ -72,6 +72,17 @@ public final class AgentRepository {
         try context.save()
     }
 
+    // MARK: - Insights
+
+    /// Most recent insights first, capped so the Glance view doesn't unbound.
+    public func recentInsights(limit: Int = 10) throws -> [Insight] {
+        var descriptor = FetchDescriptor<Insight>(
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return try context.fetch(descriptor)
+    }
+
     // MARK: - Connected accounts
 
     public func connectedAccounts() throws -> [ConnectedAccount] {

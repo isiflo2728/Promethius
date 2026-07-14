@@ -11,9 +11,9 @@ enum NavSelection : Hashable {
 }
 /// connected accounts, and settings.
 struct SidebarView: View {
-    
-    @State var selection: NavSelection = .missionControl
-    
+
+    @Binding var selection: NavSelection
+
     var body: some View {
         List(selection: $selection) {
             Section("Work Space") {
