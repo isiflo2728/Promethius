@@ -25,9 +25,14 @@ public final class MissionControlViewModel {
         }
     }
 
-    public func createAgent(named name: String) {
+    /// Deletes the agents and, by the schema's cascade rules, their run logs,
+    /// pending approvals, permissions, triggers, and sub-agents.
+    ///
+    /// Batched deliberately: one `save()` and one re-fetch regardless of how
+    /// many agents were selected.
+    public func delete(_ agents: [Agent]) {
         do {
-            try repository.createAgent(name: name)
+            try repository.delete(agents)
             load()
         } catch {
             errorMessage = error.localizedDescription

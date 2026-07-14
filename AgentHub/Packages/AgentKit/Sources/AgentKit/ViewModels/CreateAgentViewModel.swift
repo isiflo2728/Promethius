@@ -9,7 +9,12 @@ public final class CreateAgentViewModel {
     public var name: String = ""
     public var summary: String = ""
     public var selectedScopes: Set<PermissionScope> = []
+    public var trigger: TriggerKind = .manual
     public var errorMessage: String?
+
+    /// Shown in the create form's model picker. Not persisted: `Agent` has no
+    /// model relationship yet, so the choice is discarded on save.
+    public var modelName: String = "Llama 3.1 8B"
 
     private let repository: AgentRepository
 
@@ -34,6 +39,7 @@ public final class CreateAgentViewModel {
             let agent = try repository.createAgent(name: name, summary: summary)
             try repository.update(agent) { agent in
                 agent.permissions = selectedScopes.map { Permission(scope: $0) }
+                agent.triggers = [Trigger(kind: trigger)]
             }
             return agent
         } catch {

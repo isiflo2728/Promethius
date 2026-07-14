@@ -9,6 +9,7 @@ public enum AgentStore {
         SubAgent.self,
         RunLogEntry.self,
         PendingApproval.self,
+        Insight.self,
         Permission.self,
         LocalModel.self,
         Trigger.self,
