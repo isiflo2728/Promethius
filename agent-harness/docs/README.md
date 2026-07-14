@@ -84,6 +84,41 @@ Type a message ('exit' to quit, Ctrl+C to interrupt).
 >
 ```
 
+### 4. Run the SSE server (for a frontend, e.g. SwiftUI/macOS)
+
+`server.py` puts the same `core/loop.py` loop behind an HTTP/SSE endpoint
+instead of a terminal prompt — for a native frontend (SwiftUI on macOS is
+this project's actual target) to consume. Nothing about the loop changes;
+`main.py`'s terminal chat and `server.py`'s endpoint both just drive the
+same `core.loop.run()` generator and turn its events into their own output
+format. See `docs/Understanding/loop_events_for_a_frontend.md` for the full
+event-shape reference and a worked example.
+
+```bash
+uv run uvicorn server:app --reload
+```
+
+Then `POST /chat` with a JSON body of `{"session_id": str, "message": str}`
+— the response is a `text/event-stream` of one JSON event per SSE `data:`
+line (`turn_start`, `status`, `thinking`, `tool_call`, `tool_result`,
+`final`, `max_turns` — see `core/loop.py`'s `run()` docstring for the exact
+shape of each). Try it with `curl`:
+
+```bash
+curl -N -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "test-1", "message": "hello"}'
+```
+
+`-N` disables curl's output buffering so events print as they arrive
+instead of all at once at the end. `session_id` is whatever the frontend
+picks to keep one conversation's history distinct from another's — the
+server keeps a `session_id -> messages` map in memory (lost on restart).
+
+For how a Swift client actually consumes this stream (`URLSession.bytes(for:)`,
+SSE line-parsing, a `Decodable` event shape), see
+`docs/Understanding/loop_events_for_a_frontend.md`'s Q7.
+
 ## Dependencies
 
 From `pyproject.toml` (managed by `uv`, Python `>=3.11` pinned in
@@ -187,7 +222,109 @@ more thin `connect_*()` wrapper, not a change to `_register()`. Full
 walkthrough: `docs/Understanding/mcp_stream_lifetime_bug.md` and
 `docs/Understanding/jsonrpc_and_mcp_protocol.md`.
 
-## Files
+### How the loop ties the LLM and MCPClient together
+
+The most important thing to understand about this architecture: **the LLM
+(via `LocalProvider`) and `MCPClient` never interact with each other.**
+Neither one holds a reference to the other, and neither knows the other
+exists. `core/loop.py` is the only thing that talks to both — it's a
+courier carrying small, fixed data shapes back and forth, not an
+intelligent component itself. All the "thinking" happens inside one
+isolated, stateless call to the model; the loop just decides when to make
+that call and what to do with what comes back.
+
+```mermaid
+flowchart LR
+    Provider["LocalProvider\n(talks to Ollama)"]
+    Loop["core/loop.py"]
+    MCP["MCPClient"]
+
+    MCP -->|"1: schemas()\nlist[dict: name, description, input_schema]"| Loop
+    Loop -->|"2: complete(messages, tools, system)"| Provider
+    Provider -->|"3: ModelResponse\ncontent: str\ntool_calls: list[ToolCall]"| Loop
+    Loop -->|"4: call(tc.name, tc.arguments)"| MCP
+    MCP -->|"5: str result (never raises)"| Loop
+    Loop -->|"6: format_tool_result(id, result)\n-> Message(role='tool')"| Provider
+```
+
+Steps 1-3 happen once per turn before anything is decided; steps 4-6 only
+happen if the model actually requested a tool call in step 3. Then the
+loop goes back to step 1 with the updated `messages`.
+
+**What `ModelResponse` is, and why it depends on OpenAI's shape.**
+`providers/base.py` defines it as a plain dataclass:
+
+```python
+@dataclass
+class ModelResponse:
+    content: str                  # text reply (empty if only tool calls)
+    tool_calls: list[ToolCall]    # tools the model wants to run this turn
+    stop_reason: str              # e.g. "stop" vs "tool_calls"
+    usage: dict[str, object]      # token counts
+```
+
+This dataclass itself is provider-agnostic — `core/loop.py` only ever
+touches these four fields, never raw API JSON. But *populating* it is
+entirely `providers/local.py`'s job, and that step is unavoidably
+OpenAI-shaped: Ollama exposes an OpenAI-compatible `/v1/chat/completions`
+endpoint, so `complete()` sends the request in OpenAI's wire format and
+receives `response.choices[0].message` back in OpenAI's format too —
+`finish_reason`, `tool_calls[i].function.name`,
+`tool_calls[i].function.arguments` (a **JSON-encoded string**, not a
+dict). `providers/local.py` unpacks that raw shape into `ModelResponse`
+before the loop ever sees it. Swap Ollama for a different
+OpenAI-compatible provider and nothing changes; swap in a provider with a
+genuinely different API shape (e.g. Anthropic's Messages API) and only
+`providers/local.py`'s parsing logic would need to change — `ModelResponse`
+itself stays identical, which is the entire point of the abstraction.
+
+**What a tool call looks like, and why it's shaped that way.**
+
+```python
+@dataclass
+class ToolCall:
+    id: str                      # unique per call
+    name: str                    # which tool to run
+    arguments: dict[str, object] # already-parsed, not a JSON string
+```
+
+Three fields, each earning its place: `id` exists purely for
+correlation — a single turn can request multiple tool calls at once, and
+results can come back in any order, so `tool_call_id` on the later
+`Message(role="tool", ...)` has to reference this exact `id` to say which
+request it's answering. `name` and `arguments` are just "what to call and
+with what" — deliberately nothing else. `arguments` is a `dict`, not the
+raw JSON string Ollama actually sends — `providers/local.py` does
+`json.loads(tc.function.arguments)` before this dataclass is ever
+constructed, so nothing downstream (the loop, `MCPClient`) ever has to
+think about JSON parsing.
+
+**What `mcp.schemas()` looks like, and what reaches `core/loop.py`.**
+`MCPClient.schemas()` returns a plain list of dicts:
+
+```python
+[
+    {
+        "name": "COMPOSIO_SEARCH_TOOLS",
+        "description": "...",
+        "input_schema": { ... },   # JSON Schema, straight from the MCP server
+    },
+    ...
+]
+```
+
+This is the exact shape `core/loop.py` passes to `provider.complete(...)`
+as `tools=mcp.schemas()` — the loop never transforms it further. That
+transformation happens one layer downstream, inside
+`providers/local.py`'s `_format_tools()`, which is also where
+`input_schema` (MCP/Anthropic's naming convention) becomes `parameters`
+(OpenAI's naming convention) — see `_format_tools()`'s own docstring. The
+loop itself stays agnostic to both namings; it just relays whatever
+`MCPClient` currently reports as available, fresh, every single turn —
+which is also why a server that connects mid-conversation or whose tool
+list changes would be picked up automatically without any code change.
+
+
 
 Real, working code:
 
@@ -195,6 +332,12 @@ Real, working code:
   servers are configured via env vars (currently just Composio), runs a
   terminal chat loop calling `core.loop.run()` per message, and always
   disconnects cleanly on exit (normal, `exit`, or Ctrl+C).
+- **`server.py`** — the same loop behind an HTTP/SSE endpoint (`POST
+  /chat`) for a native frontend instead of a terminal. Shares one
+  `LocalProvider`/`MCPClient` across requests (built once at startup, in
+  `lifespan`), keyed per-`session_id` message history. Streams
+  `core.loop.run()`'s event dicts out as SSE — see Setup step 4 and
+  `docs/Understanding/loop_events_for_a_frontend.md`.
 - **`core/loop.py`** — the ReAct loop itself: send history + tool schemas
   to the model, dispatch any requested tool calls through MCP, append
   results, repeat until the model returns plain text or `max_turns` is

@@ -30,6 +30,9 @@ object and has no interrupt-checking — per CLAUDE.md, that's a deliberate
 "don't build until there's a concrete need" call, not an oversight.
 """
 
+from typing import Any
+from collections.abc import AsyncIterator
+
 from providers.base import BaseProvider, Message
 from mcp_client.client import MCPClient
 
@@ -45,26 +48,52 @@ async def run(
     messages: list[Message],
     system: str,
     max_turns: int = MAX_TURNS,
-) -> str:
-    """Run one user turn through the ReAct loop; return the model's final
-    text reply.
+) -> AsyncIterator[dict[str, Any]]:
+    """Run one user turn through the ReAct loop, yielding one event dict per
+    step instead of printing directly — both consumers of this generator
+    (main.py's CLI, server.py's SSE endpoint) turn these into their own
+    output (print lines vs. JSON-over-SSE) instead of loop.py picking one
+    format for everyone. See docs/Understanding/loop_events_for_a_frontend.md
+    for the full design discussion and a worked example.
+
+    A "turn" = one full trip through the for-loop below: one
+    `provider.complete()` call, plus — if the model requested tools that
+    turn — dispatching all of them and appending their results. It is NOT
+    one turn per tool call; a single turn can dispatch several tools if the
+    model requested several at once. `turn_start` fires once per model
+    call, matching `for turn in range(max_turns)` exactly.
+
+    Event shapes, in the order they can occur within a turn:
+        {"type": "turn_start", "turn": int}
+        {"type": "status", "state": "thinking"}
+            -- yielded right before provider.complete(); the model is
+            generating and has produced nothing observable yet. A consumer
+            should show a "thinking" indicator from this point until it
+            sees the next event.
+        {"type": "thinking", "text": str}
+            -- the model returned text *alongside* a tool-call request
+            (e.g. "Let me check that for you") — this is content the
+            model actually said, distinct from the "status" event above.
+        {"type": "status", "state": "tool_running", "name": str}
+            -- yielded right before dispatching one specific tool call.
+        {"type": "tool_call", "id": str, "name": str, "arguments": dict}
+        {"type": "tool_result", "tool_call_id": str, "name": str, "result": str}
+        {"type": "final", "text": str}
+            -- the model is done; this is its final answer for the turn.
+        {"type": "max_turns"}
+            -- max_turns was reached without a "final" event.
 
     `messages` is mutated in place (each turn's messages are appended to
     it) so the caller's conversation history keeps growing across
     successive calls to `run()` — the same shape `Agent.run()` was always
     meant to have, just against the provider/MCP stack instead of a raw
     OpenAI client.
-
-    Loop, per turn:
-      1. Send the full history + MCP tool schemas to the model.
-      2. No tool calls -> the model is done; return its text.
-      3. Tool calls -> append the assistant's tool-call request, dispatch
-         each call through MCP, append each result, go to 1.
     """
     messages.append(Message(role="user", content=user_input))
 
     for turn in range(max_turns):
-        print(f"\n[turn {turn + 1}]")
+        yield {"type": "turn_start", "turn": turn + 1}
+        yield {"type": "status", "state": "thinking"}
 
         response = await provider.complete(
             messages=messages,
@@ -75,10 +104,11 @@ async def run(
         # No tool calls — model is done, this is the final answer.
         if not response.tool_calls:
             messages.append(Message(role="assistant", content=response.content))
-            return response.content
+            yield {"type": "final", "text": response.content}
+            return
 
         if response.content:
-            print(f"Thinking: {response.content}")
+            yield {"type": "thinking", "text": response.content}
 
         # The assistant's tool-call request has to be appended as its own
         # message *before* the tool results that answer it — the model's
@@ -89,7 +119,13 @@ async def run(
         messages.append(Message(role="assistant", content=response.tool_calls))
 
         for tc in response.tool_calls:
-            print(f"-> calling: {tc.name}({tc.arguments})")
+            yield {"type": "status", "state": "tool_running", "name": tc.name}
+            yield {
+                "type": "tool_call",
+                "id": tc.id,
+                "name": tc.name,
+                "arguments": tc.arguments,
+            }
 
             try:
                 # MCPClient finds whichever connected server owns this
@@ -101,11 +137,16 @@ async def run(
             except Exception as e:
                 result = f"Error: {e}"
 
-            print(f"<- result: {result[:200]}")
+            yield {
+                "type": "tool_result",
+                "tool_call_id": tc.id,
+                "name": tc.name,
+                "result": result,
+            }
 
             messages.append(provider.format_tool_result(tc.id, result))
 
     # Hermes handles this with a grace call asking the model to wrap up;
     # not built here yet — rare enough in practice to defer until a real
     # task actually hits it.
-    return "Reached max turns without finishing."
+    yield {"type": "max_turns"}

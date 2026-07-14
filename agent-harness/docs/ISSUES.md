@@ -185,20 +185,69 @@ Nothing here is started yet.
       live Composio session from item 2 — connected and listed the real
       6 available tools, not a mock.
 
-- [ ] **6. Environment prerequisite, not code:** confirm Ollama is running
+- [x] **6. Environment prerequisite, not code:** confirm Ollama is running
       a model that actually supports tool calls (`ollama show <model>`,
       look for "tools" under Capabilities) before debugging anything else
       — a model that silently doesn't support tool calls looks identical
       to a broken loop from the outside.
 
-      **In progress** — Ollama itself confirmed running (v0.31.1).
-      `qwen3:14b` (the hardcoded default in `providers/local.py`, ~9.3GB)
-      is being pulled. Still open: run `ollama show qwen3:14b` once the
-      pull finishes and confirm "tools" appears under Capabilities, then
-      run an actual tool-calling turn end-to-end (a message that forces
-      the model through Composio's `COMPOSIO_SEARCH_TOOLS` →
-      `COMPOSIO_MANAGE_CONNECTIONS` → `COMPOSIO_MULTI_EXECUTE_TOOL` chain —
-      see the note on what the "6 tools" actually are, below).
+      **Done** — Ollama confirmed running (v0.31.1). `qwen3:14b`
+      (~9.3GB, fits comfortably in 24GB unified memory on the test
+      machine) pulled and confirmed via `ollama show qwen3:14b`:
+      `tools` (and `thinking`) both listed under Capabilities.
+
+- [ ] **7. The model reliably makes a real tool call on turn 1, then
+      reliably stops acting on turn 2.** Observed twice in a row, same
+      shape both times: turn 1 correctly calls `COMPOSIO_SEARCH_TOOLS`
+      with sensible arguments and gets back real tool schemas + an
+      execution plan. Turn 2, instead of calling
+      `COMPOSIO_MULTI_EXECUTE_TOOL` to actually complete the task, the
+      model just **describes** what it received instead of acting on it:
+        - Test 1 (`"what tools do you have"` — a vague meta-question):
+          the model latched onto an *example value* inside
+          `SEAT_GEEK_SEARCH_EVENTS`'s own schema (`"examples":["Taylor
+          Swift", ...]`) and wrote out fake, JSON-shaped call parameters
+          as plain text, with a garbled `session_id` (`"year"` — the real
+          one Composio returned was `"push"`).
+        - Test 2 (`"access my google drive. what is the most recent
+          file."` — a concrete, real task): the model wrote a full
+          API-documentation-style writeup summarizing the Google Drive
+          tool schemas it received, instead of calling
+          `GOOGLEDRIVE_LIST_FILES`.
+
+      In both cases `response.tool_calls` was empty on turn 2, so
+      `core/loop.py` correctly treated the text as the final answer —
+      this is a model *behavior* gap, not a loop bug; the dispatch/format
+      mechanics worked correctly both times on turn 1.
+
+      **Suspected cause:** the system prompt (`main.py`'s `SYSTEM_PROMPT`)
+      is too passive — *"You are a helpful assistant with access to
+      tools. Use them when they help answer the user's request"* — and
+      doesn't say anything about *continuing* to act once a tool result
+      comes back. Once the model has "used a tool" once (the search), it
+      seems to treat that as task-complete and switches into
+      explain-what-I-found mode, especially with a wall of dense JSON
+      sitting in context that reads like something to summarize for a
+      human rather than data to act on.
+
+      **Proposed fix, not yet applied — now backed by real evidence, not a
+      guess.** Checked how Hermes Agent (NousResearch) handles this exact
+      class of failure — full writeup in
+      `docs/research/learning_agent_architecture.md`'s new "Part 0". Short
+      version: Hermes ships a `TOOL_USE_ENFORCEMENT_GUIDANCE` system-prompt
+      block gated to specific model families
+      (`TOOL_USE_ENFORCEMENT_MODELS = ("gpt", "codex", "gemini", "gemma",
+      "grok", "glm", "qwen", "deepseek")`) — **`"qwen"` is on that list**,
+      matched by plain substring against the model name, so `qwen3:14b`
+      would trigger it under Hermes's own logic. This is production
+      evidence, not speculation: a real system, tested across real users
+      and many model families, specifically flags Qwen as needing this
+      exact steering. Plan: adapt Hermes's actual guidance text (quoted in
+      the research notes) into `main.py`'s `SYSTEM_PROMPT`, then re-run the
+      same Google Drive test to confirm it changes turn 2's behavior. If it
+      doesn't fully fix it, `TASK_COMPLETION_GUIDANCE` (Hermes's second,
+      universal block, also quoted there) targets the closely related
+      "stops after a stub" failure and is worth adding too.
 
 ### What Composio's "6 tools" actually turned out to be
 
