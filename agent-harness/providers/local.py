@@ -22,15 +22,21 @@ from collections.abc import AsyncIterator
 
 class LocalProvider(BaseProvider):
     def __init__(
-        self, model: str = "qwen3:14b", base_url: str = "http://localhost:11434/v1"
+        self,
+        model: str = "qwen3:14b",
+        base_url: str = "http://localhost:11434/v1",
+        api_key: str = "ollama",
     ):
-        # AsyncOpenAI is the OpenAI SDK's client — but pointed at Ollama's
-        # own server instead of OpenAI's. Ollama deliberately serves an
-        # OpenAI-compatible endpoint, so the same SDK works unmodified.
-        # api_key="ollama" is a throwaway value: the SDK requires *some*
-        # non-empty string here, but Ollama doesn't check it (no real auth,
-        # no billing — it's your own laptop).
-        self.client = AsyncOpenAI(base_url=base_url, api_key="ollama")
+        # AsyncOpenAI is the OpenAI SDK's client — but pointed at a local
+        # OpenAI-compatible server instead of OpenAI's own. Both Ollama
+        # (default base_url above) and LM Studio (http://localhost:1234/v1)
+        # deliberately serve this same OpenAI-compatible shape, so the same
+        # SDK works unmodified against either — see docs/README.md's
+        # "Switching inference engines" section. api_key is a throwaway
+        # value either way: the SDK requires *some* non-empty string, but
+        # neither server actually checks it (no real auth, no billing —
+        # it's your own laptop).
+        self.client = AsyncOpenAI(base_url=base_url, api_key=api_key)
         self.model = model
 
     @override

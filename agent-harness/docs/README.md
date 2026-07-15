@@ -119,6 +119,58 @@ For how a Swift client actually consumes this stream (`URLSession.bytes(for:)`,
 SSE line-parsing, a `Decodable` event shape), see
 `docs/Understanding/loop_events_for_a_frontend.md`'s Q7.
 
+### 5. Switching inference engines (Ollama vs. LM Studio)
+
+`providers/local.py`'s `LocalProvider` only needs an OpenAI-compatible
+`base_url` — it doesn't care which server is behind it. `main.py` and
+`server.py` both read three env vars (all optional, all default to Ollama)
+to build it:
+
+```bash
+# .env — only needed to override the defaults below
+LLM_BASE_URL=http://localhost:11434/v1   # Ollama default; LM Studio: http://localhost:1234/v1
+LLM_API_KEY=ollama                        # Ollama default; LM Studio: lm-studio
+AGENT_MODEL=qwen3:14b                     # must match whatever tag/identifier the chosen engine reports
+```
+
+Both engines have the **same real constraint**: neither's OpenAI-compatible
+endpoint accepts a context-length override *per request* — it has to be set
+when the model is loaded, not in the chat completion call itself. This bit
+this project directly (see `docs/ISSUES.md` item 7): Ollama defaults every
+model to a 4096-token context window, and a single Composio tool result
+measured ~5,500 tokens on its own — silently truncating context before the
+model ever saw it.
+
+**Ollama:** bake a larger context into a custom model via a `Modelfile`
+(there's no other way to set it against the OpenAI-compatible endpoint):
+
+```bash
+# ollama/qwen3-14b-agent.Modelfile
+FROM qwen3:14b
+PARAMETER num_ctx 40960   # qwen3:14b's own architectural max — confirmed to
+                          # still fit fully on GPU/unified memory (15GB of
+                          # 24GB total) on the test machine; see the
+                          # Modelfile's own comments for how that was checked
+```
+
+```bash
+ollama create qwen3-14b-agent -f ollama/qwen3-14b-agent.Modelfile
+# then in .env: AGENT_MODEL=qwen3-14b-agent
+```
+
+**LM Studio:** set it when loading the model via the `lms` CLI instead:
+
+```bash
+lms load <model> -c 40960
+lms server start --port 1234
+# then in .env: LLM_BASE_URL=http://localhost:1234/v1, LLM_API_KEY=lm-studio,
+# AGENT_MODEL=<whatever identifier `lms ps` reports for the loaded model>
+```
+
+Note LM Studio and Ollama each manage their own separate model downloads —
+a model already pulled in one isn't reusable by the other; switching means
+downloading it again through whichever engine you pick.
+
 ## Dependencies
 
 From `pyproject.toml` (managed by `uv`, Python `>=3.11` pinned in

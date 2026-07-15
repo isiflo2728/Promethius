@@ -1,0 +1,11 @@
+FROM qwen3:14b
+# Default Ollama context window (4096 tokens) is smaller than a single
+# Composio COMPOSIO_SEARCH_TOOLS tool result (~5,500 tokens measured in
+# testing) - see docs/ISSUES.md item 7. The OpenAI-compatible endpoint
+# main.py/server.py use has no way to set this per-request (confirmed via
+# Ollama's own docs), so it has to be baked into a custom model via
+# Modelfile instead. 40960 is qwen3:14b's own architectural max context
+# length (`ollama show qwen3:14b`) - also confirmed empirically to still
+# fit fully on GPU/unified memory (15GB of 24GB total, 100% GPU, no CPU
+# offload) on this machine, so there's no reason to pick anything smaller.
+PARAMETER num_ctx 40960
