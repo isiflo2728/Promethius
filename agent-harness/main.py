@@ -30,7 +30,45 @@ from providers.local import LocalProvider
 
 load_dotenv()
 
-SYSTEM_PROMPT = "You are a helpful assistant with access to tools. Use them when they help answer the user's request."
+# The base instruction alone (just "use tools when they help") let
+# qwen3:14b call a real tool on turn 1, then on turn 2 just *describe* the
+# result in plain text instead of continuing to act on it — see
+# docs/ISSUES.md item 7. Both blocks below are adapted verbatim from
+# Hermes Agent's agent/prompt_builder.py (TOOL_USE_ENFORCEMENT_GUIDANCE,
+# TASK_COMPLETION_GUIDANCE — see docs/research/learning_agent_architecture.md's
+# "Part 0" for the full writeup and why "qwen" specifically is one of the
+# model families Hermes gates this guidance to). Applied unconditionally
+# here rather than gated by model name substring, since this project
+# currently only targets one model family at a time via AGENT_MODEL —
+# revisit with Hermes's substring-gating approach if a model that doesn't
+# need this steering is ever added.
+SYSTEM_PROMPT = """You are a helpful assistant with access to tools. Use them when they help answer the user's request.
+
+# Tool-use enforcement
+You MUST use your tools to take action — do not describe what you would do
+or plan to do without actually doing it. When you say you will perform an
+action (e.g. 'I will run the tests', 'Let me check the file', 'I will create
+the project'), you MUST immediately make the corresponding tool call in the same
+response. Never end your turn with a promise of future action — execute it now.
+Keep working until the task is actually complete. Do not stop with a summary of
+what you plan to do next time. If you have tools available that can accomplish
+the task, use them instead of telling the user what you would do.
+Every response should either (a) contain tool calls that make progress, or
+(b) deliver a final result to the user. Responses that only describe intentions
+without acting are not acceptable.
+
+# Finishing the job
+When the user asks you to build, run, or verify something, the deliverable is
+a working artifact backed by real tool output — not a description of one.
+Do not stop after writing a stub, a plan, or a single command. Keep working
+until you have actually exercised the code or produced the requested result,
+then report what real execution returned.
+If a tool, install, or network call fails and blocks the real path, say so
+directly and try an alternative (different package manager, different
+approach, ask the user). NEVER substitute plausible-looking fabricated
+output (made-up data, invented file contents, synthesised API responses)
+for results you couldn't actually produce. Reporting a blocker honestly
+is always better than inventing a result."""
 
 
 async def connect_configured_servers(mcp: MCPClient) -> None:
@@ -91,7 +129,17 @@ async def print_events(
 
 
 async def main() -> None:
-    provider = LocalProvider(model=os.environ.get("AGENT_MODEL", "qwen3:14b"))
+    # LLM_BASE_URL/LLM_API_KEY let this point at any OpenAI-compatible local
+    # server, not just Ollama — e.g. LM Studio's server is at
+    # http://localhost:1234/v1 with api_key="lm-studio" (still just a
+    # throwaway placeholder, same as Ollama's "ollama" — neither server
+    # actually validates it). See docs/README.md's "Switching inference
+    # engines" section.
+    provider = LocalProvider(
+        model=os.environ.get("AGENT_MODEL", "qwen3:14b"),
+        base_url=os.environ.get("LLM_BASE_URL", "http://localhost:11434/v1"),
+        api_key=os.environ.get("LLM_API_KEY", "ollama"),
+    )
     mcp = MCPClient()
     messages: list[Message] = []
 

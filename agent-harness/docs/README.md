@@ -1,7 +1,7 @@
 # agent-harness
 
-A hand-rolled agent harness, built against a local Ollama model, using MCP
-(Model Context Protocol) as its tool layer. Started as an intentional
+A hand-rolled agent harness, built against a local LM Studio model, using
+MCP (Model Context Protocol) as its tool layer. Started as an intentional
 scaffold (signatures and comments, no implementations) — the core pieces
 (`core/loop.py`, `main.py`, `providers/local.py`, `mcp_client/client.py`)
 are now real, working code, verified against a live Composio MCP server.
@@ -9,24 +9,45 @@ See `research/learning_agent_architecture.md` for the design concepts
 behind this, and `docs/ISSUES.md` for the current, up-to-date status of
 what's built vs. still open.
 
+**Use LM Studio, not Ollama.** This project ran on Ollama initially, but
+its OpenAI-compatible endpoint defaults every model to a 4096-token
+context window with no per-request way to raise it — a real bug this hit
+directly (`docs/ISSUES.md` item 7). LM Studio is now the maintained,
+default path; Ollama is not recommended even though `providers/local.py`
+still supports it as a fallback (see Setup step 5).
+
 ## Setup
 
-### 1. Base setup — Ollama + Python deps
+### 1. Base setup — LM Studio + Python deps
 
 ```bash
-# 1. install Ollama: https://ollama.com/download
-# 2. pull a tool-calling-capable model
-ollama pull qwen3:14b        # this project's coded default (providers/local.py)
-# or: ollama pull llama3.1   # smaller/faster alternative — set AGENT_MODEL=llama3.1 in .env if you use this
+# 1. install LM Studio: https://lmstudio.ai/download
+# 2. bootstrap the `lms` CLI onto your PATH (one-time)
+~/.lmstudio/bin/lms bootstrap
 
-# 3. start the Ollama server (if not already running)
-ollama serve
+# 3. pull the GGUF variant specifically — not MLX. MLX's backend crashed
+#    outright (Fatal Python error: Aborted) partway through a real
+#    multi-turn tool-calling test; GGUF (llama.cpp) completed the same
+#    test with no issues. Full incident writeup:
+#    docs/Understanding/switching_to_lm_studio.md
+lms get qwen/qwen3-14b --gguf -y
 
-# 4. confirm the model actually supports tool calls before relying on it —
-#    claiming support and reliably returning tool calls are not the same thing
-ollama show qwen3:14b        # look for "tools" under Capabilities
+# 4. load it with a context window big enough for real tool output — a
+#    single Composio tool result alone measured ~5,500 tokens, so the
+#    default (often ~4096-8192) isn't enough. If this is the only variant
+#    of qwen3-14b you've downloaded, this works directly:
+lms load qwen/qwen3-14b -c 32768
+#    If you have BOTH GGUF and MLX downloaded, `lms load` cannot reliably
+#    pick which one — it only accepts a base model key and loads whichever
+#    variant is currently "selected," with no non-interactive way to
+#    change that. Do the variant pick + context-length setting through
+#    the LM Studio app's own GUI load dialog instead in that case.
 
-# 5. python deps (uv manages the venv for you)
+# 5. start the server
+lms server start --port 1234
+lms ps   # confirm CONTEXT is what you set, and note the exact IDENTIFIER
+
+# 6. python deps (uv manages the venv for you)
 uv sync
 ```
 
@@ -44,7 +65,9 @@ tools available, as a plain chat.
 # .env
 COMPOSIO_API_KEY=ak_...
 COMPOSIO_MCP_URL=https://backend.composio.dev/tool_router/{session_id}/mcp
-AGENT_MODEL=qwen3:14b        # optional — only needed to override the default
+AGENT_MODEL=qwen/qwen3-14b               # must match the IDENTIFIER `lms ps` reported
+LLM_BASE_URL=http://localhost:1234/v1    # LM Studio's server; omit only if using Ollama instead
+LLM_API_KEY=lm-studio                    # placeholder value, not a real credential — see Setup step 5
 ```
 
 **Getting `COMPOSIO_MCP_URL`:** Composio's dashboard has no "create
@@ -118,6 +141,42 @@ server keeps a `session_id -> messages` map in memory (lost on restart).
 For how a Swift client actually consumes this stream (`URLSession.bytes(for:)`,
 SSE line-parsing, a `Decodable` event shape), see
 `docs/Understanding/loop_events_for_a_frontend.md`'s Q7.
+
+### 5. Using Ollama instead (not recommended, but still supported)
+
+`providers/local.py`'s `LocalProvider` only needs an OpenAI-compatible
+`base_url` — it doesn't care which server is behind it, so `main.py` and
+`server.py` both read `AGENT_MODEL`/`LLM_BASE_URL`/`LLM_API_KEY` from the
+environment rather than hardcoding LM Studio. If you have a reason to use
+Ollama anyway, it has the **same real constraint** LM Studio does: no
+per-request way to raise the context window, only at load time. Ollama's
+mechanism is a custom model built via a `Modelfile`:
+
+```bash
+# ollama/qwen3-14b-agent.Modelfile
+FROM qwen3:14b
+PARAMETER num_ctx 40960   # qwen3:14b's own architectural max — confirmed to
+                          # still fit fully on GPU/unified memory (15GB of
+                          # 24GB total) on the test machine; see the
+                          # Modelfile's own comments for how that was checked
+```
+
+```bash
+ollama pull qwen3:14b
+ollama create qwen3-14b-agent -f ollama/qwen3-14b-agent.Modelfile
+ollama serve
+```
+
+```bash
+# .env
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_API_KEY=ollama
+AGENT_MODEL=qwen3-14b-agent
+```
+
+Note LM Studio and Ollama each manage their own separate model downloads —
+a model already pulled in one isn't reusable by the other; switching means
+downloading it again through whichever engine you pick.
 
 ## Dependencies
 

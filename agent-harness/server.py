@@ -43,7 +43,13 @@ async def lifespan(app: FastAPI):
     # One provider + one MCPClient for the process lifetime, shared across
     # every session — same reason main.py's CLI only builds these once:
     # reconnecting MCP servers per request would be slow and pointless.
-    app.state.provider = LocalProvider(model=os.environ.get("AGENT_MODEL", "qwen3:14b"))
+    # See main.py's provider construction for why LLM_BASE_URL/LLM_API_KEY
+    # exist — lets this point at Ollama or LM Studio without a code change.
+    app.state.provider = LocalProvider(
+        model=os.environ.get("AGENT_MODEL", "qwen3:14b"),
+        base_url=os.environ.get("LLM_BASE_URL", "http://localhost:11434/v1"),
+        api_key=os.environ.get("LLM_API_KEY", "ollama"),
+    )
     app.state.mcp = MCPClient()
     # session_id -> that conversation's growing message history. In-memory
     # only (lost on restart) — fine for a local desktop app; swap for a

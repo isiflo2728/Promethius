@@ -196,7 +196,7 @@ Nothing here is started yet.
       machine) pulled and confirmed via `ollama show qwen3:14b`:
       `tools` (and `thinking`) both listed under Capabilities.
 
-- [ ] **7. The model reliably makes a real tool call on turn 1, then
+- [x] **7. The model reliably makes a real tool call on turn 1, then
       reliably stops acting on turn 2.** Observed twice in a row, same
       shape both times: turn 1 correctly calls `COMPOSIO_SEARCH_TOOLS`
       with sensible arguments and gets back real tool schemas + an
@@ -220,34 +220,43 @@ Nothing here is started yet.
       this is a model *behavior* gap, not a loop bug; the dispatch/format
       mechanics worked correctly both times on turn 1.
 
-      **Suspected cause:** the system prompt (`main.py`'s `SYSTEM_PROMPT`)
-      is too passive — *"You are a helpful assistant with access to
-      tools. Use them when they help answer the user's request"* — and
-      doesn't say anything about *continuing* to act once a tool result
-      comes back. Once the model has "used a tool" once (the search), it
-      seems to treat that as task-complete and switches into
-      explain-what-I-found mode, especially with a wall of dense JSON
-      sitting in context that reads like something to summarize for a
-      human rather than data to act on.
+      **Actual cause, found by measuring rather than guessing:** a single
+      `COMPOSIO_SEARCH_TOOLS` result measured **~5,500 tokens on its
+      own** — bigger than Ollama's default 4096-token context window
+      (confirmed live via `ollama ps` showing `CONTEXT 4096`). The
+      OpenAI-compatible endpoint `providers/local.py` talks to has no
+      per-request way to raise this — confirmed against Ollama's own docs:
+      *"you must create a `Modelfile`."* So turn 2 was very likely working
+      from a silently truncated context, quite possibly missing the tool
+      result's own explicit `"next_steps_guidance"` telling it exactly what
+      to call next.
 
-      **Proposed fix, not yet applied — now backed by real evidence, not a
-      guess.** Checked how Hermes Agent (NousResearch) handles this exact
-      class of failure — full writeup in
-      `docs/research/learning_agent_architecture.md`'s new "Part 0". Short
-      version: Hermes ships a `TOOL_USE_ENFORCEMENT_GUIDANCE` system-prompt
-      block gated to specific model families
-      (`TOOL_USE_ENFORCEMENT_MODELS = ("gpt", "codex", "gemini", "gemma",
-      "grok", "glm", "qwen", "deepseek")`) — **`"qwen"` is on that list**,
-      matched by plain substring against the model name, so `qwen3:14b`
-      would trigger it under Hermes's own logic. This is production
-      evidence, not speculation: a real system, tested across real users
-      and many model families, specifically flags Qwen as needing this
-      exact steering. Plan: adapt Hermes's actual guidance text (quoted in
-      the research notes) into `main.py`'s `SYSTEM_PROMPT`, then re-run the
-      same Google Drive test to confirm it changes turn 2's behavior. If it
-      doesn't fully fix it, `TASK_COMPLETION_GUIDANCE` (Hermes's second,
-      universal block, also quoted there) targets the closely related
-      "stops after a stub" failure and is worth adding too.
+      **Fix applied — two parts:**
+      1. Both Hermes guidance blocks (not just `TOOL_USE_ENFORCEMENT_GUIDANCE`
+         — `TASK_COMPLETION_GUIDANCE` too) adapted verbatim into `main.py`'s
+         `SYSTEM_PROMPT`, applied unconditionally rather than gated by model
+         name substring (this project only targets one model family at a
+         time via `AGENT_MODEL`).
+      2. Context window raised well past what a single tool result needs —
+         `ollama/qwen3-14b-agent.Modelfile` (`PARAMETER num_ctx 40960`) for
+         Ollama; a GGUF `qwen3-14b` load at `CONTEXT 32768` after switching
+         to LM Studio (see below).
+
+      **Confirmed fixed**, end-to-end, on the real Google Drive test: turn 2
+      now correctly calls `COMPOSIO_MANAGE_CONNECTIONS`, presents connect
+      links, and — after authenticating — correctly calls
+      `COMPOSIO_MULTI_EXECUTE_TOOL` to run `GOOGLEDRIVE_FIND_FILE` and
+      return a real result.
+
+      **Aside, surfaced while re-testing this fix:** switched the inference
+      engine from Ollama to LM Studio mid-investigation (unrelated
+      motivation), which hit its own real bug — LM Studio's MLX backend
+      hard-aborted (`Fatal Python error: Aborted`, confirmed in LM Studio's
+      own server logs) partway through the same test, ruled out as a
+      hardware ceiling (the identical model/context already ran clean on
+      the same machine via Ollama/GGUF) and resolved by loading the GGUF
+      variant of the same model instead of MLX. Full narrative:
+      `docs/Understanding/switching_to_lm_studio.md`.
 
 ### What Composio's "6 tools" actually turned out to be
 
