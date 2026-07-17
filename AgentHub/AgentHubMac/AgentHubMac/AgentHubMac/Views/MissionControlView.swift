@@ -3,11 +3,18 @@ import SwiftUI
 import SwiftData
 import AgentKit
 
-/// The Mac's primary screen: a grid of agent cards plus any pending approvals.
-/// Fully interactive here (the iPhone version is read-only + Intent-driven).
+/// The Mac's primary screen: a live grid of the agents that are currently
+/// running. Pending approvals and insights live in Pulse (`GlanceView`), not
+/// here. Fully interactive on the Mac (the iPhone version is read-only +
+/// Intent-driven).
 struct MissionControlView: View {
     @Environment(\.modelContext) private var modelContext
     @State var viewModel: MissionControlViewModel
+
+    /// The window's nav selection, so creating an agent can jump straight to
+    /// its detail — the grid below shows running agents only, and a fresh
+    /// agent is idle, so it would otherwise appear nowhere on this screen.
+    @Binding var navSelection: NavSelection
 
     /// Whether the grid is in selection mode. Outside it, cards don't respond
     /// to clicks; inside it, every click toggles membership.
@@ -19,6 +26,7 @@ struct MissionControlView: View {
     @State private var anchorID: UUID?
     /// Agents staged for deletion, awaiting confirmation.
     @State private var agentsPendingDeletion: [Agent] = []
+    @State private var showingScheduleSheet = false
 
     private let columns = [GridItem(.adaptive(minimum: 260), spacing: 16)]
 
@@ -33,15 +41,14 @@ struct MissionControlView: View {
 
     var body: some View {
         ScrollView {
-            if !viewModel.pendingApprovals.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Needs Attention")
-                        .font(.headline)
-                    ForEach(viewModel.pendingApprovals) { approval in
-                        ApprovalCard(approval: approval)
-                    }
-                }
-                .padding(.bottom, 24)
+            if viewModel.agents.isEmpty {
+                ContentUnavailableView(
+                    "No agents yet",
+                    systemImage: "moon.zzz",
+                    description: Text("Add an agent to get started. Anything that needs you lives in Pulse.")
+                )
+                .frame(maxWidth: .infinity)
+                .padding(.top, 60)
             }
 
             LazyVGrid(columns: columns, spacing: 16) {
@@ -106,16 +113,23 @@ struct MissionControlView: View {
                 Button("Select") { isSelecting = true }
                     .disabled(viewModel.agents.isEmpty)
 
+                Button("Schedule") { showingScheduleSheet = true }
+                    .disabled(viewModel.agents.isEmpty)
+
                 AddAgentButton(onDismiss: viewModel.load) {
                     CreateAgentView(
                         viewModel: CreateAgentViewModel(
                             repository: AgentRepository(context: modelContext)
-                        )
+                        ),
+                        onCreated: { navSelection = .agent($0.id) }
                     )
                 }
             }
         }
         .onAppear { viewModel.load() }
+        .sheet(isPresented: $showingScheduleSheet, onDismiss: viewModel.load) {
+            ScheduleAgentView()
+        }
     }
 
     private var allSelected: Bool {

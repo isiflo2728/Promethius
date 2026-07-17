@@ -40,6 +40,22 @@ from mcp_client.client import MCPClient
 # picks 20 for this project "for now — increase as tasks get more complex."
 MAX_TURNS = 20
 
+# Cap on any single tool call. A hung remote tool (observed in practice: a
+# Composio MULTI_EXECUTE fetching 50 Gmail messages that never returned)
+# otherwise stalls the whole run silently — no events flow, and eventually
+# the *client's* idle timeout kills the entire conversation turn. Timing out
+# instead turns the hang into an error result the model can react to
+# (retry smaller, try another tool, or report the blocker). 4 minutes is
+# generous: healthy Composio calls return in seconds.
+#
+# The policy (how long) lives here; the mechanism lives in MCPClient.call(),
+# which passes it to the MCP SDK's read_timeout_seconds. It used to be an
+# asyncio.wait_for here — that cancelled call_tool from outside its anyio
+# cancel scopes, which crashed runs with an unhandleable CancelledError and
+# corrupted the session. See MCPClient.call's docstring before "simplifying"
+# it back.
+TOOL_TIMEOUT_SECONDS = 240
+
 
 async def run(
     user_input: str,
@@ -48,6 +64,7 @@ async def run(
     messages: list[Message],
     system: str,
     max_turns: int = MAX_TURNS,
+    max_result_chars: int | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Run one user turn through the ReAct loop, yielding one event dict per
     step instead of printing directly — both consumers of this generator
@@ -130,12 +147,31 @@ async def run(
             try:
                 # MCPClient finds whichever connected server owns this
                 # tool and dispatches to it; always returns a string
-                # (never raises) per its own contract, but this loop
-                # still guards the call — a broken tool must not crash
-                # the loop, same rule CLAUDE.md states for local dispatch.
-                result = await mcp.call(tc.name, tc.arguments)
+                # (never raises) per its own contract — timeouts included,
+                # which come back as an error string telling the model not
+                # to retry the identical call. This loop still guards the
+                # call — a broken tool must not crash the loop, same rule
+                # CLAUDE.md states for local dispatch.
+                result = await mcp.call(
+                    tc.name, tc.arguments, timeout_seconds=TOOL_TIMEOUT_SECONDS
+                )
             except Exception as e:
                 result = f"Error: {e}"
+
+            # A single huge tool result (a Gmail fetch returning dozens of
+            # full message bodies, observed in practice) can overflow the
+            # local model's context window and 400 the whole run. Callers
+            # that know their task only needs summaries (e.g. /briefing)
+            # opt in to a cap; the marker tells the model the cut happened
+            # so it can re-request a smaller batch instead of trusting a
+            # silently incomplete result.
+            if max_result_chars is not None and len(result) > max_result_chars:
+                omitted = len(result) - max_result_chars
+                result = (
+                    result[:max_result_chars]
+                    + f"\n…[truncated: {omitted} chars omitted. If you need "
+                    "more, request fewer items per call.]"
+                )
 
             yield {
                 "type": "tool_result",

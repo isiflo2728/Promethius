@@ -27,6 +27,23 @@ public final class AgentDetailViewModel {
         (agent.runLog ?? []).sorted { $0.timestamp < $1.timestamp }
     }
 
+    /// Granted permissions, oldest first, for the detail view's toggle list.
+    public var permissions: [Permission] {
+        (agent.permissions ?? []).sorted { $0.grantedAt < $1.grantedAt }
+    }
+
+    /// The trigger the subtitle describes: the first enabled one, else the
+    /// first configured, else nil (a manual agent).
+    public var primaryTrigger: Trigger? {
+        let triggers = agent.triggers ?? []
+        return triggers.first { $0.isEnabled } ?? triggers.first
+    }
+
+    /// Flip a permission on or off and persist it.
+    public func setPermission(_ permission: Permission, enabled: Bool) {
+        try? repository.update(agent) { _ in permission.isEnabled = enabled }
+    }
+
     /// True while a command has been enqueued from this device but the Mac
     /// hasn't applied it yet (CloudKit still propagating). Drives an optimistic
     /// "Requested…" state so a lagging sync doesn't look like a dead button and

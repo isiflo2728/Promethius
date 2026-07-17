@@ -49,8 +49,15 @@ struct InsightCard: View {
                     }
                 }
             }
+
+            // Keep content top-aligned so every tile in the grid lines up,
+            // matching ApprovalCard — uniform cards regardless of body length.
+            Spacer(minLength: 0)
         }
         .padding(16)
+        // Uniform tile size across the Glance grid — kept in sync with
+        // ApprovalCard's frame. Taller content grows past this minimum.
+        .frame(maxWidth: .infinity, minHeight: 220, alignment: .topLeading)
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.quaternary))
         .accessibilityElement(children: .combine)

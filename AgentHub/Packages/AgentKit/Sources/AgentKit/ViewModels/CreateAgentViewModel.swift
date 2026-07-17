@@ -12,8 +12,8 @@ public final class CreateAgentViewModel {
     public var trigger: TriggerKind = .manual
     public var errorMessage: String?
 
-    /// Shown in the create form's model picker. Not persisted: `Agent` has no
-    /// model relationship yet, so the choice is discarded on save.
+    /// Shown in the create form's model picker and persisted onto the agent
+    /// (`Agent.modelName`) so the detail view can display it.
     public var modelName: String = "Llama 3.1 8B"
 
     private let repository: AgentRepository
@@ -38,6 +38,7 @@ public final class CreateAgentViewModel {
         do {
             let agent = try repository.createAgent(name: name, summary: summary)
             try repository.update(agent) { agent in
+                agent.modelName = modelName
                 agent.permissions = selectedScopes.map { Permission(scope: $0) }
                 agent.triggers = [Trigger(kind: trigger)]
             }

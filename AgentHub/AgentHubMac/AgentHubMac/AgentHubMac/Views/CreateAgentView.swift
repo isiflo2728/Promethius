@@ -10,6 +10,12 @@ struct CreateAgentView: View {
     @State var viewModel: CreateAgentViewModel
     @Environment(\.dismiss) private var dismiss
 
+    /// Called with the newly created agent just before the sheet dismisses.
+    /// Mission Control's grid shows running agents only, so without this the
+    /// fresh (idle) agent is invisible from where it was created — the caller
+    /// uses it to navigate straight to the new agent's detail.
+    var onCreated: (Agent) -> Void = { _ in }
+
     /// Shown but not persisted — `Agent` has no model relationship yet.
     private let modelChoices = [
         "Llama 3.1 8B", "Phi-3 Mini", "DeepSeek Coder 6.7B", "Whisper + Llama 3 8B",
@@ -180,7 +186,10 @@ struct CreateAgentView: View {
             Spacer()
 
             Button("Create Agent") {
-                if viewModel.save() != nil { dismiss() }
+                if let agent = viewModel.save() {
+                    onCreated(agent)
+                    dismiss()
+                }
             }
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.canSave)

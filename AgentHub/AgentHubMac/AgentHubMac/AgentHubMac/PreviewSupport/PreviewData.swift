@@ -25,23 +25,56 @@ enum PreviewData {
         for agent in agents {
             container.mainContext.insert(agent)
         }
+        // Fill each agent's model / trigger / permissions / run log so the
+        // detail view renders fully — same seed the running app uses.
+        for agent in agents {
+            DevSeed.applyDetail(to: agent, context: container.mainContext)
+        }
         seedApprovals(into: container.mainContext, agents: agents)
         seedInsights(into: container.mainContext, agents: agents)
         return container
     }()
 
-    /// A couple of pending approvals for the "Needs you" section.
-    private static func seedApprovals(into context: ModelContext, agents: [Agent]) {
-        let reply = PendingApproval(
-            title: "Reply ready to send",
-            detail: "\u{201C}Q3 budget review\u{201D} from Sam — drafted: \u{201C}Revised numbers by Friday, can we push the call to Monday?\u{201D}",
-            proposedToolName: "composio.gmail.send"
-        )
-        reply.agent = agents.first { $0.name == "Inbox Triage" }
-        context.insert(reply)
+    /// A fully-populated agent for the `AgentDetailView` preview — the one that
+    /// matches the reference mockup (git-commit trigger, DeepSeek model).
+    static var detailedAgent: Agent {
+        (try? context.fetch(FetchDescriptor<Agent>()))?
+            .first { $0.name == "Repo Sentinel" } ?? sampleAgents[0]
     }
 
-    /// A summary + a digest for the "Recent insights" section.
+    /// A couple of pending approvals for the "Needs you" section.
+    private static func seedApprovals(into context: ModelContext, agents: [Agent]) {
+        let inbox = agents.first { $0.name == "Inbox Triage" }
+        let standup = agents.first { $0.name == "Standup Notes" }
+
+        let reply = PendingApproval(
+            title: "Reply ready to send",
+            detail: "Re: \u{201C}Q3 budget review\u{201D} — to Sam",
+            draftBody: "Revised numbers by Friday. Can we push the call to Monday?",
+            proposedToolName: "composio.gmail.send"
+        )
+        reply.agent = inbox
+
+        let slack = PendingApproval(
+            title: "Post standup to Slack",
+            detail: "To #engineering",
+            draftBody: "Yesterday: shipped sidebar nav. Today: wiring the agent runner. No blockers so far.",
+            proposedToolName: "composio.slack.send"
+        )
+        slack.agent = standup
+
+        let invite = PendingApproval(
+            title: "Send calendar invite",
+            detail: "\u{201C}Design review\u{201D} Thursday 3:00–3:30 PM with Sam and Alex — agenda: sign off the onboarding copy.",
+            proposedToolName: "composio.googlecalendar.create"
+        )
+        invite.agent = inbox
+
+        [reply, slack, invite].forEach(context.insert)
+    }
+
+    /// A spread of insights for the "Recent insights" section — each with a
+    /// body and three bullets so the grid tiles stay uniform.
     private static func seedInsights(into context: ModelContext, agents: [Agent]) {
         let summary = Insight(
             title: "Design Sync — summary",
@@ -60,11 +93,46 @@ enum PreviewData {
             source: "Calendar watch",
             kind: .digest,
             iconName: "calendar",
-            detail: "4 upcoming items. Next: Design Sync at 2:30 PM, then a PR review due at 5:00 PM."
+            detail: "4 upcoming items across the week — here's what's next.",
+            bullets: ["Design Sync — today 2:30 PM",
+                      "PR review due — today 5:00 PM",
+                      "1:1 with Sam — Thu 11:00 AM"]
         )
 
-        context.insert(summary)
-        context.insert(digest)
+        let prNote = Insight(
+            title: "PR #142 needs a nudge",
+            source: "PR Watcher",
+            kind: .note,
+            iconName: "arrow.triangle.pull",
+            detail: "Open two days with no review, and you're the requested reviewer.",
+            bullets: ["Touches AgentRunner + tools",
+                      "1 failing check: unit tests",
+                      "Author pinged twice"]
+        )
+
+        let inboxInsight = Insight(
+            title: "Inbox triaged",
+            source: "Inbox Triage",
+            kind: .summary,
+            iconName: "tray.full",
+            detail: "Sorted 18 new messages; a few need you, the rest are handled.",
+            bullets: ["3 flagged for a reply",
+                      "2 drafts ready to review",
+                      "13 archived automatically"]
+        )
+
+        let metrics = Insight(
+            title: "Weekly metrics",
+            source: "Standup Notes",
+            kind: .digest,
+            iconName: "chart.bar",
+            detail: "Activity is up week-over-week; here's the shape of it.",
+            bullets: ["12 PRs merged (+3)",
+                      "4 agents active",
+                      "0 failed runs"]
+        )
+
+        [summary, digest, prNote, inboxInsight, metrics].forEach(context.insert)
     }
 
     /// The in-memory context, if a view needs it directly.
@@ -74,10 +142,21 @@ enum PreviewData {
     static var repository: AgentRepository { AgentRepository(context: context) }
 
     /// A handful of agents in varied states for previewing cards and lists.
+    /// Most are `.running` so Mission Control (running-only) has a full grid;
+    /// a couple stay idle/waiting to exercise Pulse.
     static var sampleAgents: [Agent] {
         [
             Agent(name: "Inbox Triage",
                   summary: "Sorts new mail and drafts quick replies for review.",
+                  status: .running),
+            Agent(name: "Meeting Notetaker",
+                  summary: "Joins calls and turns them into shared summaries.",
+                  status: .running),
+            Agent(name: "Repo Sentinel",
+                  summary: "Watches CI and surfaces failing checks as they land.",
+                  status: .running),
+            Agent(name: "Expense Sorter",
+                  summary: "Categorizes receipts and flags anything over budget.",
                   status: .running),
             Agent(name: "Standup Notes",
                   summary: "Summarizes yesterday's activity into a morning digest.",
@@ -85,6 +164,9 @@ enum PreviewData {
             Agent(name: "PR Watcher",
                   summary: "Watches the repo and pings you when a review is requested.",
                   status: .waitingApproval),
+            Agent(name: "Code Reviewer",
+                  summary: "Reviews staged diffs before push and flags risky changes.",
+                  status: .failed),
         ]
     }
 }

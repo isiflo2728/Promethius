@@ -11,6 +11,9 @@ public final class Agent {
     public var name: String = ""
     public var summary: String = ""
     public var statusRaw: String = AgentStatus.idle.rawValue
+    /// Display name of the model this agent runs on, e.g. "DeepSeek Coder
+    /// 6.7B". Surfaced in the detail subtitle; empty until one is chosen.
+    public var modelName: String = ""
     public var createdAt: Date = Date()
     public var updatedAt: Date = Date()
 
@@ -38,11 +41,12 @@ public final class Agent {
         set { statusRaw = newValue.rawValue }
     }
 
-    public init(name: String, summary: String = "", status: AgentStatus = .idle) {
+    public init(name: String, summary: String = "", status: AgentStatus = .idle, modelName: String = "") {
         self.id = UUID()
         self.name = name
         self.summary = summary
         self.statusRaw = status.rawValue
+        self.modelName = modelName
         self.createdAt = Date()
         self.updatedAt = Date()
     }

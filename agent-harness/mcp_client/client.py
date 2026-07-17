@@ -49,14 +49,36 @@
 # ClientSession : the communicator
 # gives asy
 from contextlib import AsyncExitStack
+from datetime import timedelta
 from typing import Any
 import httpx
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-from mcp import ClientSession, StdioServerParameters
+from mcp import ClientSession, McpError, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.message import SessionMessage
 from mcp.types import CallToolResult
+
+
+def _is_timeout(exc: Exception) -> bool:
+    """True when exc is the SDK's per-request read timeout (raised by
+    call_tool when read_timeout_seconds expires — see
+    mcp/shared/session.py, which tags it httpx.codes.REQUEST_TIMEOUT)."""
+    return isinstance(exc, McpError) and exc.error.code == httpx.codes.REQUEST_TIMEOUT
+
+
+def _timeout_result(tool_name: str, timeout_seconds: float) -> str:
+    """The string handed to the model when a tool call times out. Written as
+    guidance, not just a report: the model's usual reflex is to retry the
+    identical call, which for a genuinely hung tool just burns another
+    timeout window."""
+    return (
+        f"Error: the {tool_name} call was cancelled after "
+        f"{timeout_seconds:.0f}s without responding. Do not retry the "
+        "exact same call — try a smaller request (fewer items, a "
+        "narrower query) or a different approach, or report this "
+        "blocker in your final answer."
+    )
 
 
 class MCPClient:
@@ -68,6 +90,9 @@ class MCPClient:
         # stay open until disconnect_all() explicitly closes them, instead
         # of closing themselves when the connect_*() call returns.
         self._exit_stack = AsyncExitStack()
+        # (url, headers) per HTTP server, kept so call() can rebuild a
+        # connection when the remote session has gone stale — see call().
+        self._http_params: dict[str, tuple[str, dict[str, str] | None]] = {}
 
     async def connect_stdio(
         self, name: str, command: str, args: list[str] | None = None
@@ -98,6 +123,7 @@ class MCPClient:
         are authenticated via an `x-api-key` header rather than a spawned
         subprocess.
         """
+        self._http_params[name] = (url, headers)
         # streamable_http_client doesn't take headers directly — it expects
         # a pre-configured httpx.AsyncClient (that's how auth/headers are
         # set now; the old headers= kwarg lived on the now-deprecated
@@ -154,7 +180,11 @@ class MCPClient:
         # input Scehema is just the arguments the tool reuqires (path String)
         tools = await session.list_tools()
 
-        # pulling the servers tools and adding it to the master list
+        # pulling the servers tools and adding it to the master list —
+        # dropping any previous entries for this server first, so a
+        # reconnect (see call()) replaces its tools instead of duplicating
+        # them (duplicated schemas would double what the model sees).
+        self._tools = [t for t in self._tools if t["_server"] != name]
         for tool in tools.tools:
             self._tools.append(
                 {
@@ -177,8 +207,23 @@ class MCPClient:
             for t in self._tools
         ]
 
-    async def call(self, tool_name: str, arguments: dict[str, Any]) -> str:
-        """Find which server owns this tool and call it."""
+    async def call(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any],
+        timeout_seconds: float | None = None,
+    ) -> str:
+        """Find which server owns this tool and call it.
+
+        `timeout_seconds` caps how long one call may take, enforced via the
+        SDK's own read_timeout_seconds so the timeout fires *inside* the
+        session's anyio cancel scopes. It must NOT be reimplemented with
+        asyncio.wait_for around this method: cancelling call_tool from
+        outside violates the session's scope hierarchy, which escapes as an
+        uncatchable-in-practice CancelledError and leaves the session broken
+        for every later call (observed crashing whole /chat and /briefing
+        runs).
+        """
         server_name = next(
             (t["_server"] for t in self._tools if t["name"] == tool_name), None
         )
@@ -186,10 +231,35 @@ class MCPClient:
             return f"Error: tool '{tool_name}' not found in any MCP server"
 
         session = self.sessions[server_name]
+        read_timeout = (
+            timedelta(seconds=timeout_seconds) if timeout_seconds is not None else None
+        )
 
         try:
             # result : CallToolResult
-            result: CallToolResult = await session.call_tool(tool_name, arguments)
+            try:
+                result: CallToolResult = await session.call_tool(
+                    tool_name, arguments, read_timeout_seconds=read_timeout
+                )
+            except Exception as e:
+                # A timeout is not a broken session — the server is alive,
+                # this one call hung. The reconnect below would rerun the
+                # exact call that just hung, so report it instead.
+                if _is_timeout(e):
+                    return _timeout_result(tool_name, timeout_seconds)
+                # Remote streamable-HTTP sessions go stale after idling —
+                # Composio's server expires them, and the symptom is every
+                # call failing instantly (often with an empty-message
+                # exception). For HTTP servers, rebuild the connection once
+                # and retry before giving up; stdio servers have no stored
+                # params to rebuild from, so they fail as before.
+                if server_name not in self._http_params:
+                    return f"error calling {tool_name}: {type(e).__name__}: {e}"
+                url, headers = self._http_params[server_name]
+                await self.connect_http(server_name, url, headers)
+                result = await self.sessions[server_name].call_tool(
+                    tool_name, arguments, read_timeout_seconds=read_timeout
+                )
 
             if not result.content:
                 # Legal per CallToolResult.content: list[ContentBlock] — a
@@ -226,7 +296,12 @@ class MCPClient:
             return "\n".join(final_output)
 
         except Exception as e:
-            return f"error calling {tool_name}: {e}"
+            # Covers the post-reconnect retry timing out, too.
+            if _is_timeout(e):
+                return _timeout_result(tool_name, timeout_seconds)
+            # Include the exception type — str(e) alone is often empty for
+            # transport-level failures, which used to make these unreadable.
+            return f"error calling {tool_name}: {type(e).__name__}: {e}"
 
     async def disconnect_all(self):
         """Tear down every connection this client opened.

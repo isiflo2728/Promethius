@@ -58,6 +58,12 @@ public final class AgentRepository {
 
     // MARK: - Approvals
 
+    public func addApproval(_ approval: PendingApproval, to agent: Agent) throws {
+        approval.agent = agent
+        context.insert(approval)
+        try context.save()
+    }
+
     public func pendingApprovals() throws -> [PendingApproval] {
         let pendingRaw = ApprovalStatus.pending.rawValue
         let descriptor = FetchDescriptor<PendingApproval>(
@@ -72,6 +78,13 @@ public final class AgentRepository {
         try context.save()
     }
 
+    /// Persist an edited draft body (e.g. after the user tweaks a proposed
+    /// email reply) without resolving the approval.
+    public func updateDraft(_ approval: PendingApproval, to body: String) throws {
+        approval.draftBody = body
+        try context.save()
+    }
+
     // MARK: - Insights
 
     /// Most recent insights first, capped so the Glance view doesn't unbound.
@@ -80,6 +93,28 @@ public final class AgentRepository {
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
         descriptor.fetchLimit = limit
+        return try context.fetch(descriptor)
+    }
+
+    // MARK: - Activity
+
+    /// Most recent run-log entries across every agent, newest first — the
+    /// cross-agent activity feed the Today view's "Right now" section shows.
+    public func recentRunLog(limit: Int = 20) throws -> [RunLogEntry] {
+        var descriptor = FetchDescriptor<RunLogEntry>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return try context.fetch(descriptor)
+    }
+
+    /// Every run-log entry since `date`, newest first — the raw material for
+    /// the Today view's weekly recap.
+    public func runLog(since date: Date) throws -> [RunLogEntry] {
+        let descriptor = FetchDescriptor<RunLogEntry>(
+            predicate: #Predicate { $0.timestamp >= date },
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
         return try context.fetch(descriptor)
     }
 

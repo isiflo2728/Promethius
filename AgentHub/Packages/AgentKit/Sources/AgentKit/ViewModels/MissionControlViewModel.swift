@@ -18,7 +18,13 @@ public final class MissionControlViewModel {
 
     public func load() {
         do {
-            agents = try repository.allAgents()
+            // Every agent, running ones first — the same population as the
+            // sidebar's Agents section, so the two never disagree. (A
+            // running-only filter here previously made freshly created idle
+            // agents invisible on the very screen that creates them.)
+            agents = try repository.allAgents().sorted {
+                ($0.status == .running ? 0 : 1, $0.name) < ($1.status == .running ? 0 : 1, $1.name)
+            }
             pendingApprovals = try repository.pendingApprovals()
         } catch {
             errorMessage = error.localizedDescription
