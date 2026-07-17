@@ -1,4 +1,7 @@
-# Promethius — AgentHub (Composio version)
+# Promethius — AgentHub (Cerebras version)
+
+> **What's in this branch:** see [`CHANGES.md`](CHANGES.md) for a detailed
+> breakdown of everything this branch changes compared to `develop`.
 
 A macOS + iOS app for building and running autonomous AI agents, built with
 SwiftUI, SwiftData, and CloudKit, backed by a hand-rolled Python agent

@@ -424,7 +424,21 @@ struct TodayView: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 16) {
-                    sectionLabel("What's next", color: .mint)
+                    HStack(spacing: 10) {
+                        sectionLabel("What's next", color: .mint)
+                        Spacer()
+                        // Re-reads the Mac's local EventKit store. It can't
+                        // make macOS fetch from Google any sooner — that's
+                        // the system's own sync cycle.
+                        Button {
+                            Task { await viewModel.loadCalendar() }
+                        } label: {
+                            Label("Refresh", systemImage: "arrow.clockwise")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
                     whatsNext
                     Button {
                         openCalendarApp()
